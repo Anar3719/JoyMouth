@@ -34,7 +34,7 @@ auth.onAuthStateChanged((user) => {
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('main-content').style.display = 'block';
         document.getElementById('user-info').innerText = "👤 " + user.displayName;
-        loadOrderHistory(user.displayName);
+        loadOrderHistory(user.displayName); // Нэвтрэх үед түүхийг ачаална
     } else {
         document.getElementById('login-screen').style.display = 'block';
         document.getElementById('main-content').style.display = 'none';
@@ -75,7 +75,8 @@ function updateCartUI() {
         let icon = itemCounts[name].icon;
         let iconsHTML = "";
 
-        if (icon.includes('.png')) {
+        // Таны өмнөх зураг ашиглах логик хэвээрээ
+        if (icon.includes('.png') || icon.includes('.jpg') || icon.includes('.JPG')) {
             for(let i=0; i<count; i++) {
                 iconsHTML += `<img src="${icon}" style="width:18px; height:18px; margin-right:2px; vertical-align:middle; border-radius:50%;">`;
             }
@@ -111,7 +112,10 @@ async function loadOrderHistory(userName) {
             .limit(5)
             .get();
 
-        if (snapshot.empty) { historyList.innerHTML = "<p style='color:#888;'>Түүх хоосон.</p>"; return; }
+        if (snapshot.empty) { 
+            historyList.innerHTML = "<p style='color:#888;'>Түүх хоосон байна.</p>"; 
+            return; 
+        }
 
         let html = "";
         snapshot.forEach(doc => {
@@ -125,7 +129,10 @@ async function loadOrderHistory(userName) {
                 </div>`;
         });
         historyList.innerHTML = html;
-    } catch (e) { historyList.innerHTML = "<p>Ачаалахад алдаа гарлаа.</p>"; }
+    } catch (e) { 
+        console.error("History Error: ", e);
+        historyList.innerHTML = "<p>Ачаалахад алдаа гарлаа.</p>"; // Index үүсгээгүй үед энэ алдаа гарна
+    }
 }
 
 async function sendOrder(platform) {
