@@ -34,7 +34,8 @@ auth.onAuthStateChanged((user) => {
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('main-content').style.display = 'block';
         document.getElementById('user-info').innerText = "👤 " + user.displayName;
-        loadOrderHistory(user.displayName); // Нэвтрэх үед түүхийг ачаална
+        // Зөвхөн энэ хэрэглэгчийн түүхийг UID-аар нь ачаална
+        loadOrderHistory(user.uid); 
     } else {
         document.getElementById('login-screen').style.display = 'block';
         document.getElementById('main-content').style.display = 'none';
@@ -75,7 +76,6 @@ function updateCartUI() {
         let icon = itemCounts[name].icon;
         let iconsHTML = "";
 
-        // Таны өмнөх зураг ашиглах логик хэвээрээ
         if (icon.includes('.png') || icon.includes('.jpg') || icon.includes('.JPG')) {
             for(let i=0; i<count; i++) {
                 iconsHTML += `<img src="${icon}" style="width:18px; height:18px; margin-right:2px; vertical-align:middle; border-radius:50%;">`;
@@ -103,17 +103,18 @@ function updateCartUI() {
     document.getElementById('total-price').textContent = total.toLocaleString();
 }
 
-async function loadOrderHistory(userName) {
+async function loadOrderHistory(userId) {
     const historyList = document.getElementById('history-list');
     try {
+        // userId-аар шүүж, зөвхөн тухайн хүнийхийг харуулна
         const snapshot = await db.collection("orders")
-            .where("userName", "==", userName)
+            .where("userId", "==", userId)
             .orderBy("createdAt", "desc")
             .limit(5)
             .get();
 
         if (snapshot.empty) { 
-            historyList.innerHTML = "<p style='color:#888;'>Түүх хоосон байна.</p>"; 
+            historyList.innerHTML = "<p style='color:#888; font-size:13px; text-align:center;'>Түүх хоосон байна.</p>"; 
             return; 
         }
 
@@ -131,7 +132,7 @@ async function loadOrderHistory(userName) {
         historyList.innerHTML = html;
     } catch (e) { 
         console.error("History Error: ", e);
-        historyList.innerHTML = "<p>Ачаалахад алдаа гарлаа.</p>"; // Index үүсгээгүй үед энэ алдаа гарна
+        historyList.innerHTML = "<p style='font-size:12px; color:red;'>Ачаалахад алдаа гарлаа. Консол шалгана уу.</p>"; 
     }
 }
 
@@ -146,6 +147,7 @@ async function sendOrder(platform) {
     
     try {
         await db.collection("orders").add({
+            userId: user.uid, // UID-г хадгалах нь маш чухал
             userName: user.displayName,
             userPhone: phone,
             address: office,
@@ -161,18 +163,18 @@ async function sendOrder(platform) {
         const myNumber = "97699921202"; 
         const url = platform === 'whatsapp' ? `https://wa.me/${myNumber}?text=${encodeURIComponent(message)}` : `https://t.me/AnarGantumur?text=${encodeURIComponent(message)}`;
         
-        // ЗАХИАЛГА АМЖИЛТТАЙ БОЛСОН ТУЛ САГСЫГ ЦЭВЭРЛЭХ ХЭСЭГ:
+        // Сагс цэвэрлэх
         cart = [];
         total = 0;
         updateCartUI(); 
         
         window.open(url, '_blank');
-        loadOrderHistory(user.displayName);
+        loadOrderHistory(user.uid); // Түүхийг шинэчилж харуулна
         
         Swal.fire("Амжилттай", "Захиалгыг илгээлээ!", "success");
     } catch (e) { 
         console.error(e);
-        alert("Алдаа гарлаа"); 
+        alert("Алдаа гарлаа: " + e.message); 
     }
 }
 
@@ -181,4 +183,3 @@ function copyText(text, msg) {
         Swal.fire({ title: msg, icon: 'success', timer: 1000, showConfirmButton: false, toast: true, position: 'top' });
     });
 }
-
