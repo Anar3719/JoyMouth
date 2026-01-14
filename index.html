@@ -6,117 +6,52 @@
     <title>Joy Mouth - Order</title>
     <link rel="icon" type="image/png" href="headlogo.png">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <style>
         body { 
-            font-family: 'Segoe UI', sans-serif; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
             background: #f4f7f6; 
             padding: 20px; 
             color: #333;
-            background-image: linear-gradient(rgba(244, 247, 246, 0.92), rgba(244, 247, 246, 0.92)), url('LOGO.PNG');
+            background-image: linear-gradient(rgba(244, 247, 246, 0.94), rgba(244, 247, 246, 0.94)), url('LOGO.PNG');
             background-attachment: fixed;
             background-position: center;
             background-repeat: no-repeat;
             background-size: 300px;
         }
-        .container { max-width: 450px; margin: auto; background: rgba(255, 255, 255, 0.95); padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
-        .logo-container { text-align: center; margin-bottom: 10px; }
-        .logo-container img { width: 100%; max-width: 300px; height: auto; border-radius: 15px; border: 3px solid #5d4037; }
-        h1 { text-align: center; color: #5d4037; font-size: 22px; margin-bottom: 20px; }
-        .item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
-        .item-name { cursor: pointer; color: #5d4037; font-weight: 500; border-bottom: 1px dashed #2ecc71; }
-        .add-btn { cursor: pointer; background: #5d4037; color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; }
+        .container { 
+            max-width: 450px; 
+            margin: auto; 
+            background: rgba(255, 255, 255, 0.98); 
+            padding: 25px; 
+            border-radius: 24px; 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1); 
+        }
+        .logo-container { text-align: center; margin-bottom: 15px; }
+        .logo-container img { width: 100%; max-width: 250px; height: auto; border-radius: 20px; border: 2px solid #5d4037; }
         
-        #cart { margin-top: 30px; border-top: 2px solid #5d4037; padding-top: 15px; }
-        input { width: 100%; padding: 12px; margin: 5px 0 10px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 15px; }
+        h1 { text-align: center; color: #5d4037; font-size: 24px; margin-bottom: 25px; letter-spacing: 1px; }
         
-        .bank-selector { background: #fff; border: 2px solid #5d4037; border-radius: 15px; padding: 12px 15px; margin-top: 10px; cursor: pointer; display: flex; align-items: center; }
-        .bank-logo { width: 45px; height: 45px; object-fit: contain; margin-right: 15px; }
-        .bank-info { display: none; margin-top: 10px; padding: 15px; background: #fdfaf8; border-radius: 12px; border: 1px solid #eee; }
-        .copy-item { background: #fff; padding: 12px; border-radius: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #eee; cursor: pointer; }
-        .label { font-size: 11px; color: #888; display: block; text-transform: uppercase; }
-        .acc-name { color: #2ecc71; font-weight: bold; font-size: 14px; }
+        /* Цэсний хэсэг */
+        .item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #eee; }
+        .item-name { cursor: pointer; color: #5d4037; font-weight: 600; font-size: 16px; transition: 0.3s; }
+        .item-name:hover { color: #2ecc71; }
+        .add-btn { cursor: pointer; background: #5d4037; color: white; border: none; padding: 10px 18px; border-radius: 12px; font-weight: 600; transition: 0.2s; }
+        .add-btn:active { transform: scale(0.95); }
+
+        /* Сагсны хэсэг */
+        #cart { margin-top: 35px; border-top: 3px solid #5d4037; padding-top: 20px; }
+        #cart h3 { color: #5d4037; margin-bottom: 15px; }
+        .cart-item-container { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
         
-        .order-buttons { display: flex; gap: 10px; margin-top: 20px; }
-        .order-btn { flex: 1; padding: 15px; border: none; border-radius: 10px; color: white; font-weight: bold; cursor: pointer; }
-        .google-btn { background: white; border: 1px solid #ddd; padding: 12px; border-radius: 10px; width: 100%; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .item-icons { font-size: 18px; letter-spacing: -5px; margin-left: 10px; }
-    </style>
-</head>
-<body>
+        input { width: 100%; padding: 14px; margin: 8px 0; border: 1.5px solid #ddd; border-radius: 12px; box-sizing: border-box; font-size: 15px; outline: none; }
+        input:focus { border-color: #5d4037; }
 
-<div id="login-screen" class="container">
-    <div class="logo-container"><img src="LOGO.PNG" alt="Logo"></div>
-    <h1>Joy Mouth</h1>
-    <button class="google-btn" onclick="signInWithGoogle()">
-        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" style="margin-right: 10px;">
-        Google-ээр нэвтрэх
-    </button>
-</div>
-
-<div id="main-content" class="container" style="display:none;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
-        <span id="user-info" style="font-weight: bold; color: #5d4037;">👤 ...</span>
-        <button onclick="logout()" style="color: #e74c3c; border: none; background: none; cursor: pointer;">Гарах</button>
-    </div>
-
-    <div id="menu">
-        <div class="item"><span class="item-name" onclick="showProductImage('burger_real.jpg', 'Бүргер')">🍔 Бүргер - 7,000₮</span><button class="add-btn" onclick="addToCart('Бүргер', 7000, '🍔')">Нэмэх</button></div>
-        <div class="item"><span class="item-name" onclick="showProductImage('sandwich_real.jpg', 'Сэндвич')">🥪 Сэндвич - 6,000₮</span><button class="add-btn" onclick="addToCart('Сэндвич', 6000, '🥪')">Нэмэх</button></div>
-        <div class="item"><span class="item-name" onclick="showProductImage('kimbap_real.JPG', 'Кимбаб')">🍱 Кимбаб - 4,000₮</span><button class="add-btn" onclick="addToCart('Кимбаб', 4000, '🍱')">Нэмэх</button></div>
-        <div class="item"><span class="item-name" onclick="showProductImage('ciabatta_real.jpg', 'Чиабатта')">🍔 Чиабатта - 7,500₮</span><button class="add-btn" onclick="addToCart('Чиабатта', 7500, '🍔')">Нэмэх</button></div>
-    </div>
-
-    <div id="cart">
-        <h3>🛒 Сагс</h3>
-        <ul id="cart-items" style="list-style: none; padding: 0;"></ul>
-        <p style="font-size: 18px; text-align: right;"><strong>Нийт: <span id="total-price">0</span>₮</strong></p>
+        /* Банкны хэсэг */
+        .bank-selector { background: #fff; border: 1.5px solid #eee; border-radius: 15px; padding: 12px 15px; margin-top: 10px; cursor: pointer; display: flex; align-items: center; transition: 0.2s; }
+        .bank-selector:hover { border-color: #5d4037; background: #fdfdfd; }
+        .bank-logo { width: 40px; height: 40px; object-fit: contain; margin-right: 15px; }
+        .bank-info { display: none; margin-top: 5px; padding: 15px; background: #fdfaf8; border-radius: 15px; border: 1px solid #eee; }
+        .copy-item { background: #fff; padding: 12px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; border: 1px solid #eee; }
         
-        <input type="number" id="phone" placeholder="📞 Утасны дугаар">
-        <input type="text" id="office" placeholder="📍 Хаяг: Оффис, Давхар, Өрөө">
-
-        <div class="bank-selector" onclick="toggleBank('mbank-info')"><img src="bank-logo-mbank.png" class="bank-logo"><strong>М-Банк</strong></div>
-        <div id="mbank-info" class="bank-info">
-            <div class="copy-item" onclick="copyText('980039008010043724', 'М-Банк хуулагдлаа')">
-                <div><span class="label">Данс: 980039008010043724</span><span class="acc-name">Алтан-Очир Хонгорзул</span></div>
-                <small style="color:#0088cc;">Хуулах</small>
-            </div>
-        </div>
-
-        <div class="bank-selector" onclick="toggleBank('golomt-info')"><img src="bank-logo-golomt.png" class="bank-logo"><strong>Голомт Банк</strong></div>
-        <div id="golomt-info" class="bank-info">
-            <div class="copy-item" onclick="copyText('890015001205153549', 'Голомт банк хуулагдлаа')">
-                <div><span class="label">Данс: 890015001205153549</span><span class="acc-name">Алтан-Очир Хонгорзул</span></div>
-                <small style="color:#0088cc;">Хуулах</small>
-            </div>
-        </div>
-
-        <div class="bank-selector" onclick="toggleBank('state-info')"><img src="bank-logo-state.png" class="bank-logo"><strong>Төрийн Банк</strong></div>
-        <div id="state-info" class="bank-info">
-            <div class="copy-item" onclick="copyText('610034108801485289', 'Төрийн банк хуулагдлаа')">
-                <div><span class="label">Данс: 610034108801485289</span><span class="acc-name">Алтан-Очир Хонгорзул</span></div>
-                <small style="color:#0088cc;">Хуулах</small>
-            </div>
-        </div>
-
-        <div class="order-buttons">
-            <button class="order-btn" onclick="sendOrder('whatsapp')" style="background: #25D366;">WhatsApp</button>
-            <button class="order-btn" onclick="sendOrder('telegram')" style="background: #0088cc;">Telegram</button>
-        </div>
-    </div>
-</div>
-
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-<script src="script.js"></script>
-<script>
-    function toggleBank(id) {
-        const el = document.getElementById(id);
-        document.querySelectorAll('.bank-info').forEach(b => { if(b.id !== id) b.style.display = 'none'; });
-        el.style.display = (el.style.display === 'block') ? 'none' : 'block';
-    }
-</script>
-</body>
-</html>
-
+        .label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+        .acc-name { color: #2ecc71; font-weight: bold; font-size: 14px; display: block; margin-top: 2px;
