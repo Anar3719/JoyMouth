@@ -110,9 +110,12 @@ function updateCartUI() {
         li.innerHTML = `
             <div style="display:flex; align-items:center; gap:12px; flex:1;">
                 <img src="${imgUrl}" style="width:45px; height:45px; border-radius:8px; object-fit:cover; border:1px solid #eee;">
-                <div style="text-align:left;">
-                    <span style="font-weight:600; color:#5d4037; font-size:14px;">${name} <span style="color:#2ecc71;">x${count}</span></span>
-                    <br><small style="color:#888;">${subtotal.toLocaleString()}₮</small>
+                <div style="text-align:left; flex:1; display:flex; justify-content:space-between; align-items:center; padding-right:15px;">
+                    <div>
+                        <span style="font-weight:600; color:#5d4037; font-size:14px; display:block;">${name}</span>
+                        <small style="color:#888;">${subtotal.toLocaleString()}₮</small>
+                    </div>
+                    <span style="color:#2ecc71; font-weight:bold; font-size:15px; margin-left: auto;">x${count}</span>
                 </div>
             </div>
             <div style="display:flex; align-items:center; gap:10px; background:#f4f7f6; padding:5px 10px; border-radius:20px;">
@@ -151,3 +154,4 @@ function sendOrder(platform) {
     const url = platform === 'whatsapp' ? `https://wa.me/${myNumber}?text=${encodeURIComponent(message)}` : `https://t.me/AnarGantumur?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
 }
+
