@@ -78,19 +78,24 @@ function updateCartUI() {
 
     for (const name in itemCounts) {
         let li = document.createElement('li');
-        li.style.cssText = "display:flex; justify-content:space-between; align-items:center; padding:10px 0; font-size:14px; border-bottom:1px dashed #eee;";
+        li.style.cssText = "display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid #f0f0f0;";
         
         let subtotal = itemCounts[name].price * itemCounts[name].count;
         
         li.innerHTML = `
-            <div>
-                <span>${name} <b>x${itemCounts[name].count}</b></span>
-                <br><small style="color:#888">${subtotal.toLocaleString()}₮</small>
+            <div style="flex:1;">
+                <span style="font-weight:500; color:#5d4037;">${name}</span>
+                <br><small style="color:#888;">${subtotal.toLocaleString()}₮</small>
             </div>
-            <button onclick="removeFromCart('${name}')" 
-                style="background:#ff7675; color:white; border:none; padding:4px 10px; border-radius:6px; cursor:pointer; font-weight:bold;">
-                Хасах
-            </button>
+            <div style="display:flex; align-items:center; gap:10px; background:#f4f7f6; padding:5px 10px; border-radius:20px;">
+                <button onclick="removeFromCart('${name}')" 
+                    style="width:28px; height:28px; border-radius:50%; border:none; background:#ff7675; color:white; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center;">-</button>
+                
+                <span style="font-weight:bold; min-width:20px; text-align:center;">${itemCounts[name].count}</span>
+                
+                <button onclick="addToCart('${name}', ${itemCounts[name].price})" 
+                    style="width:28px; height:28px; border-radius:50%; border:none; background:#2ecc71; color:white; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center;">+</button>
+            </div>
         `;
         list.appendChild(li);
     }
@@ -134,4 +139,5 @@ function sendOrder(platform) {
         ? `https://wa.me/${myNumber}?text=${encodeURIComponent(message)}`
         : `https://t.me/${myTelegram}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
+
 }
