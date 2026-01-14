@@ -134,24 +134,46 @@ function copyText(text, msg) {
     });
 }
 
-function sendOrder(platform) {
+async function sendOrder(platform) {
     const user = auth.currentUser;
     const office = document.getElementById('office').value;
-    if (!user || cart.length === 0 || !office) { 
-        return alert("Мэдээллээ бүрэн оруулна уу!"); 
+    const phone = document.getElementById('phone').value; // Утасны дугаар авах
+
+    // Дугаар болон хаяг бөглөсөн эсэхийг шалгах
+    if (!user || cart.length === 0 || !office || !phone) { 
+        return Swal.fire("Мэдээлэл дутуу", "Утасны дугаар болон хаягаа бүрэн оруулна уу!", "warning"); 
     }
-    
+
     const itemCounts = {};
     cart.forEach(item => { itemCounts[item.name] = (itemCounts[item.name] || 0) + 1; });
     
-    let itemsText = "";
-    for (const name in itemCounts) { 
-        itemsText += `- ${name} x${itemCounts[name]}\n`; 
-    }
-    
-    let message = `*ШИНЭ ЗАХИАЛГА*\n\n👤: ${user.displayName}\n📍: ${office}\n\n*Захиалга:*\n${itemsText}\n💰 *Нийт:* ${total.toLocaleString()}₮\n\n⚠️ Төлбөрөө төлөөд Screenshot-оо заавал илгээнэ үү!`;
-    const myNumber = "97699921202"; 
-    const url = platform === 'whatsapp' ? `https://wa.me/${myNumber}?text=${encodeURIComponent(message)}` : `https://t.me/AnarGantumur?text=${encodeURIComponent(message)}`;
-    window.open(url, '_blank');
-}
+    // 1. Firestore-д хадгалах өгөгдөлд утасны дугаар нэмэх
+    const orderData = {
+        userName: user.displayName,
+        userPhone: phone, // Дугаар хадгалах
+        address: office,
+        items: itemCounts,
+        totalPrice: total,
+        status: "Шинэ",
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
 
+    try {
+        await db.collection("orders").add(orderData);
+
+        let itemsText = "";
+        for (const name in itemCounts) { 
+            itemsText += `- ${name} x${itemCounts[name]}\n`; 
+        }
+        
+        // 2. Мессежний текстэнд утасны дугаар нэмэх
+        let message = `*ШИНЭ ЗАХИАЛГА*\n\n👤: ${user.displayName}\n📞: ${phone}\n📍: ${office}\n\n*Захиалга:*\n${itemsText}\n💰 *Нийт:* ${total.toLocaleString()}₮`;
+        
+        const myNumber = "97699921202"; 
+        const url = platform === 'whatsapp' ? `https://wa.me/${myNumber}?text=${encodeURIComponent(message)}` : `https://t.me/AnarGantumur?text=${encodeURIComponent(message)}`;
+        
+        window.open(url, '_blank');
+    } catch (error) {
+        console.error("Алдаа:", error);
+    }
+}
