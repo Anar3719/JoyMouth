@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+    <link rel="icon" type="image/png" href="headlogo.png">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Joy Mouth - Order</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; padding: 20px; color: #333; }
+        .container { max-width: 450px; margin: auto; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+        .logo-container { text-align: center; margin-bottom: 10px; }
+        .logo-container img { width: 100%; max-width: 300px; height: auto; border-radius: 15px; border: 3px solid #5d4037; }
+        h1 { text-align: center; color: #5d4037; font-size: 22px; margin-bottom: 20px; }
+        
+        .item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+        /* Бүтээгдэхүүний нэрний стиль */
+        .item-name { 
+            cursor: pointer; 
+            color: #5d4037; 
+            font-weight: 500;
+            border-bottom: 1px dashed #2ecc71; /* Зурагтайг илтгэх ногоон зураас */
+        }
+        .item-name:hover { color: #2ecc71; }
+        
+        .add-btn { cursor: pointer; background: #5d4037; color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; }
+        
+        #cart { margin-top: 30px; border-top: 2px solid #5d4037; padding-top: 15px; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 15px; }
+        
+        .bank-selector { 
+            background: #fff; 
+            border: 2px solid #5d4037; 
+            border-radius: 15px; 
+            padding: 12px 15px; 
+            margin-top: 10px; 
+            cursor: pointer; 
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+        }
+        .bank-selector:hover { background: #fdfaf8; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        
+        .bank-logo { 
+            width: 60px; 
+            height: 60px; 
+            object-fit: contain; 
+            margin-right: 15px; 
+            border-radius: 10px;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1)); 
+        }
+        
+        .bank-info { display: none; margin-top: 10px; padding: 15px; background: #fdfaf8; border-radius: 12px; border-top: 1px dashed #5d4037; text-align: left; }
+        
+        .copy-item { background: #fff; padding: 10px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #eee; cursor: pointer; }
+        .copy-item:active { background: #f0f0f0; }
+        .label { font-size: 11px; color: #888; display: block; }
+        
+        .screenshot-note {
+            background: #fff9c4;
+            border-left: 5px solid #fbc02d;
+            padding: 10px;
+            margin-top: 15px;
+            border-radius: 8px;
+            font-size: 13px;
+            text-align: center;
+            color: #5d4037;
+        }
+
+        .order-buttons { display: flex; gap: 10px; margin-top: 20px; }
+        .order-btn { flex: 1; padding: 15px; border: none; border-radius: 10px; color: white; font-weight: bold; cursor: pointer; }
+        .google-btn { background: white; border: 1px solid #ddd; padding: 12px; border-radius: 10px; width: 100%; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    </style>
+</head>
+<body>
+
+<div id="login-screen" class="container">
+    <div class="logo-container"><img src="logo.png" alt="Logo"></div>
+    <h1>Joy Mouth</h1>
+    <button class="google-btn" onclick="signInWithGoogle()">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" style="margin-right: 10px;">
+        Google-ээр нэвтрэх
+    </button>
+</div>
+
+<div id="main-content" class="container" style="display:none;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
+        <span id="user-info" style="font-weight: bold; color: #5d4037;">👤 ...</span>
+        <button onclick="logout()" style="color: #e74c3c; border: none; background: none; cursor: pointer;">Гарах</button>
+    </div>
+
+    <div id="menu">
+        <div class="item">
+            <span class="item-name" onclick="showProductImage('burger_real.jpg', 'Бүргер')">🍔 Бүргер - 7,000₮</span> 
+            <button class="add-btn" onclick="addToCart('Бүргер', 7000)">Нэмэх</button>
+        </div>
+        <div class="item">
+            <span class="item-name" onclick="showProductImage('sandwich_real.jpg', 'Сэндвич')">🥪 Сэндвич - 6,000₮</span> 
+            <button class="add-btn" onclick="addToCart('Сэндвич', 6000)">Нэмэх</button>
+        </div>
+        <div class="item">
+            <span class="item-name" onclick="showProductImage('kimbap_real.jpg', 'Кимбаб')">🍱 Кимбаб - 4,000₮</span> 
+            <button class="add-btn" onclick="addToCart('Кимбаб', 4000)">Нэмэх</button>
+        </div>
+        <div class="item">
+            <span class="item-name" onclick="showProductImage('ciabatta_real.jpg', 'Чиабатта')">🍔 Чиабатта - 7,500₮</span> 
+            <button class="add-btn" onclick="addToCart('Чиабатта', 7500)">Нэмэх</button>
+        </div>
+    </div>
+
+    <div id="cart">
+        <h3>🛒 Сагс</h3>
+        <ul id="cart-items" style="list-style: none; padding: 0; max-height: 250px; overflow-y: auto;"></ul>
+        <p style="font-size: 18px; text-align: right;"><strong>Нийт: <span id="total-price">0</span>₮</strong></p>
+        
+        <input type="text" id="office" placeholder="Хаяг: Оффис, Давхар, Өрөө">
+
+        <div class="bank-selector" onclick="toggleBank('mbank-info')">
+            <img src="bank-logo-mbank.png" class="bank-logo" alt="M-Bank"> 
+            <strong>М-Банкаар төлөх</strong>
+        </div>
+        <div id="mbank-info" class="bank-info">
+            <div class="copy-item" onclick="copyText('980039008010043724', 'М-Банкны данс хуулагдлаа')">
+                <div><span class="label">М-Банк</span><strong>980039008010043724</strong></div>
+                <span style="font-size: 12px; color: #5d4037;">Хуулах</span>
+            </div>
+            <div class="copy-item" onclick="copyText('А. Хонгорзул', 'Нэр хуулагдлаа')">
+                <div><span class="label">Хүлээн авагч</span><strong>А. Хонгорзул</strong></div>
+                <span style="font-size: 12px; color: #5d4037;">Хуулах</span>
+            </div>
+        </div>
+
+        <div class="bank-selector" onclick="toggleBank('golomt-info')">
+            <img src="bank-logo-golomt.png" class="bank-logo" alt="Golomt"> 
+            <strong>Голомт банкаар төлөх</strong>
+        </div>
+        <div id="golomt-info" class="bank-info">
+            <div class="copy-item" onclick="copyText('890015001205153549', 'Голомт банкны данс хуулагдлаа')">
+                <div><span class="label">Голомт Банк</span><strong>890015001205153549</strong></div>
+                <span style="font-size: 12px; color: #5d4037;">Хуулах</span>
+            </div>
+            <div class="copy-item" onclick="copyText('А. Хонгорзул', 'Нэр хуулагдлаа')">
+                <div><span class="label">Хүлээн авагч</span><strong>А. Хонгорзул</strong></div>
+                <span style="font-size: 12px; color: #5d4037;">Хуулах</span>
+            </div>
+        </div>
+
+        <div class="bank-selector" onclick="toggleBank('state-info')">
+            <img src="bank-logo-state.png" class="bank-logo" alt="State Bank"> 
+            <strong>Төрийн банкаар төлөх</strong>
+        </div>
+        <div id="state-info" class="bank-info">
+            <div class="copy-item" onclick="copyText('610034108801485289', 'Төрийн банкны данс хуулагдлаа')">
+                <div><span class="label">Төрийн Банк</span><strong>610034108801485289</strong></div>
+                <span style="font-size: 12px; color: #5d4037;">Хуулах</span>
+            </div>
+            <div class="copy-item" onclick="copyText('А. Хонгорзул', 'Нэр хуулагдлаа')">
+                <div><span class="label">Хүлээн авагч</span><strong>А. Хонгорзул</strong></div>
+                <span style="font-size: 12px; color: #5d4037;">Хуулах</span>
+            </div>
+        </div>
+
+        <div class="screenshot-note">
+            📸 <b>Төлбөр төлөөд Screenshot-оо чатаар заавал илгээнэ үү!</b>
+        </div>
+
+        <div class="order-buttons">
+            <button class="order-btn" onclick="sendOrder('whatsapp')" style="background: #25D366;">WhatsApp</button>
+            <button class="order-btn" onclick="sendOrder('telegram')" style="background: #0088cc;">Telegram</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="script.js"></script>
+
+<script>
+    function toggleBank(bankId) {
+        const allInfo = document.querySelectorAll('.bank-info');
+        allInfo.forEach(info => {
+            if (info.id !== bankId) info.style.display = 'none';
+        });
+
+        const target = document.getElementById(bankId);
+        target.style.display = (target.style.display === 'block') ? 'none' : 'block';
+    }
+
+    function copyText(text, msg) {
+        if (event) event.stopPropagation();
+        navigator.clipboard.writeText(text).then(() => {
+            Swal.fire({
+                title: msg,
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top',
+                background: '#fff',
+                color: '#5d4037'
+            });
+        });
+    }
+
+    // Шинэ функц: Зураг харуулах
+    function showProductImage(imgUrl, title) {
+        Swal.fire({
+            title: title,
+            imageUrl: imgUrl,
+            imageAlt: title,
+            imageWidth: 400,
+            imageHeight: 300,
+            showCloseButton: true,
+            showConfirmButton: false,
+            background: '#fff',
+            color: '#5d4037'
+        });
+    }
+</script>
+
+</body>
+</html>
