@@ -34,7 +34,6 @@ auth.onAuthStateChanged((user) => {
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('main-content').style.display = 'block';
         document.getElementById('user-info').innerText = "👤 " + user.displayName;
-        // Зөвхөн энэ хэрэглэгчийн түүхийг UID-аар нь ачаална
         loadOrderHistory(user.uid); 
     } else {
         document.getElementById('login-screen').style.display = 'block';
@@ -103,10 +102,10 @@ function updateCartUI() {
     document.getElementById('total-price').textContent = total.toLocaleString();
 }
 
+// ЗАХИАЛГЫН ТҮҮХ АЧААЛАХ
 async function loadOrderHistory(userId) {
     const historyList = document.getElementById('history-list');
     try {
-        // userId-аар шүүж, зөвхөн тухайн хүнийхийг харуулна
         const snapshot = await db.collection("orders")
             .where("userId", "==", userId)
             .orderBy("createdAt", "desc")
@@ -123,16 +122,52 @@ async function loadOrderHistory(userId) {
             const data = doc.data();
             const date = data.createdAt ? data.createdAt.toDate().toLocaleDateString() : "Саяхан";
             const statusColor = data.status === "Шинэ" ? "#f39c12" : (data.status === "Хүргэгдсэн" ? "#2ecc71" : "#e74c3c");
+            
+            // onclick="showOrderDetails(...)" нэмэгдсэн
             html += `
-                <div style="background:#fff; padding:10px; border-radius:12px; margin-bottom:8px; border:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
-                    <div><strong style="font-size:13px;">${date}</strong><br><small style="color:#666;">${data.totalPrice.toLocaleString()}₮</small></div>
+                <div onclick="showOrderDetails('${doc.id}')" style="cursor:pointer; background:#fff; padding:10px; border-radius:12px; margin-bottom:8px; border:1px solid #eee; display:flex; justify-content:space-between; align-items:center; transition:0.3s;" onmouseover="this.style.borderColor='#2ecc71'" onmouseout="this.style.borderColor='#eee'">
+                    <div><strong style="font-size:13px;">📅 ${date}</strong><br><small style="color:#666;">${data.totalPrice.toLocaleString()}₮ (Дэлгэрэнгүй)</small></div>
                     <span style="background:${statusColor}; color:white; padding:3px 8px; border-radius:10px; font-size:10px; font-weight:bold;">${data.status}</span>
                 </div>`;
         });
         historyList.innerHTML = html;
     } catch (e) { 
         console.error("History Error: ", e);
-        historyList.innerHTML = "<p style='font-size:12px; color:red;'>Ачаалахад алдаа гарлаа. Консол шалгана уу.</p>"; 
+        historyList.innerHTML = "<p style='font-size:12px; color:red;'>Ачаалахад алдаа гарлаа.</p>"; 
+    }
+}
+
+// ЮУ ЗАХИАЛСНЫГ ХАРУУЛАХ ФУНКЦ
+async function showOrderDetails(orderId) {
+    try {
+        const doc = await db.collection("orders").doc(orderId).get();
+        if (!doc.exists) return;
+        const data = doc.data();
+        
+        let itemsHtml = "<ul style='text-align:left; list-style:none; padding:0;'>";
+        for (const [name, count] of Object.entries(data.items)) {
+            itemsHtml += `<li style='padding:8px 0; border-bottom:1px solid #eee; display:flex; justify-content:space-between;'>
+                <span>${name}</span> <strong>x${count}</strong>
+            </li>`;
+        }
+        itemsHtml += "</ul>";
+
+        Swal.fire({
+            title: 'Захиалгын мэдээлэл',
+            html: `
+                <div style="text-align:left; font-size:14px; margin-bottom:15px; color:#555;">
+                    <p>📍 Хаяг: ${data.address}</p>
+                    <p>📞 Утас: ${data.userPhone}</p>
+                </div>
+                ${itemsHtml}
+                <div style="margin-top:15px; font-weight:bold; border-top:2px solid #eee; padding-top:10px; font-size:16px;">
+                    Нийт үнэ: ${data.totalPrice.toLocaleString()}₮
+                </div>`,
+            confirmButtonText: 'Хаах',
+            confirmButtonColor: '#2ecc71'
+        });
+    } catch (e) {
+        console.error("Details error:", e);
     }
 }
 
@@ -147,7 +182,7 @@ async function sendOrder(platform) {
     
     try {
         await db.collection("orders").add({
-            userId: user.uid, // UID-г хадгалах нь маш чухал
+            userId: user.uid,
             userName: user.displayName,
             userPhone: phone,
             address: office,
@@ -163,13 +198,12 @@ async function sendOrder(platform) {
         const myNumber = "97699921202"; 
         const url = platform === 'whatsapp' ? `https://wa.me/${myNumber}?text=${encodeURIComponent(message)}` : `https://t.me/AnarGantumur?text=${encodeURIComponent(message)}`;
         
-        // Сагс цэвэрлэх
         cart = [];
         total = 0;
         updateCartUI(); 
         
         window.open(url, '_blank');
-        loadOrderHistory(user.uid); // Түүхийг шинэчилж харуулна
+        loadOrderHistory(user.uid);
         
         Swal.fire("Амжилттай", "Захиалгыг илгээлээ!", "success");
     } catch (e) { 
