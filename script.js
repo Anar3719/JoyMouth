@@ -13,7 +13,7 @@ const auth = firebase.auth();
 let cart = [];
 let total = 0;
 
-// AUTH FUNCTIONS
+// ГҮЙЦЭТГЭХ ФУНКЦҮҮД
 function signInWithGoogle() {
     const provider = new firebase.auth.GoogleAuthProvider();
     auth.signInWithPopup(provider).catch(err => alert(err.message));
@@ -46,7 +46,7 @@ function showProductImage(imgUrl, title) {
     });
 }
 
-// --- САГСНЫ ЛОГИК (ШИНЭЧЛЭГДСЭН) ---
+// --- САГСНЫ ЛОГИК ---
 
 function addToCart(name, price) {
     cart.push({name, price});
@@ -54,12 +54,11 @@ function addToCart(name, price) {
     updateCartUI();
 }
 
-// Барааг сагснаас нэг нэгээр нь хасах функц
 function removeFromCart(name) {
     const index = cart.findIndex(item => item.name === name);
     if (index > -1) {
         total -= cart[index].price;
-        cart.splice(index, 1); // Зөвхөн нэг ширхгийг устгана
+        cart.splice(index, 1); 
         updateCartUI();
     }
 }
@@ -89,17 +88,14 @@ function updateCartUI() {
             </div>
             <div style="display:flex; align-items:center; gap:10px; background:#f4f7f6; padding:5px 10px; border-radius:20px;">
                 <button onclick="removeFromCart('${name}')" 
-                    style="width:28px; height:28px; border-radius:50%; border:none; background:#ff7675; color:white; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center;">-</button>
-                
+                    style="width:28px; height:28px; border-radius:50%; border:none; background:#ff7675; color:white; font-weight:bold; cursor:pointer;">-</button>
                 <span style="font-weight:bold; min-width:20px; text-align:center;">${itemCounts[name].count}</span>
-                
                 <button onclick="addToCart('${name}', ${itemCounts[name].price})" 
-                    style="width:28px; height:28px; border-radius:50%; border:none; background:#2ecc71; color:white; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center;">+</button>
+                    style="width:28px; height:28px; border-radius:50%; border:none; background:#2ecc71; color:white; font-weight:bold; cursor:pointer;">+</button>
             </div>
         `;
         list.appendChild(li);
     }
-    
     document.getElementById('total-price').textContent = total.toLocaleString();
 }
 
@@ -115,29 +111,17 @@ function copyText(text, msg) {
 function sendOrder(platform) {
     const user = auth.currentUser;
     const office = document.getElementById('office').value;
-
-    if (!user || cart.length === 0 || !office) {
-        return alert("Мэдээллээ бүрэн оруулна уу!");
-    }
+    if (!user || cart.length === 0 || !office) { return alert("Мэдээллээ бүрэн оруулна уу!"); }
 
     const itemCounts = {};
-    cart.forEach(item => {
-        itemCounts[item.name] = (itemCounts[item.name] || 0) + 1;
-    });
+    cart.forEach(item => { itemCounts[item.name] = (itemCounts[item.name] || 0) + 1; });
 
     let itemsText = "";
-    for (const name in itemCounts) {
-        itemsText += `- ${name} x${itemCounts[name]}\n`;
-    }
+    for (const name in itemCounts) { itemsText += `- ${name} x${itemCounts[name]}\n`; }
     
-    let message = `*ШИНЭ ЗАХИАЛГА*\n\n👤: ${user.displayName}\n📧: ${user.email}\n📍: ${office}\n\n*Захиалга:*\n${itemsText}\n💰 *Нийт:* ${total.toLocaleString()}₮\n\n⚠️ *ЧУХАЛ:* Төлбөрөө төлөөд Screenshot-оо заавал илгээнэ үү! 📸`;
-
+    let message = `*ШИНЭ ЗАХИАЛГА*\n\n👤: ${user.displayName}\n📍: ${office}\n\n*Захиалга:*\n${itemsText}\n💰 *Нийт:* ${total.toLocaleString()}₮\n\n⚠️ Төлбөрөө төлөөд Screenshot-оо заавал илгээнэ үү!`;
     const myNumber = "97699921202"; 
     const myTelegram = "AnarGantumur";
-
-    const url = platform === 'whatsapp' 
-        ? `https://wa.me/${myNumber}?text=${encodeURIComponent(message)}`
-        : `https://t.me/${myTelegram}?text=${encodeURIComponent(message)}`;
+    const url = platform === 'whatsapp' ? `https://wa.me/${myNumber}?text=${encodeURIComponent(message)}` : `https://t.me/${myTelegram}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
-
 }
