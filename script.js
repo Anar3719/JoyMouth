@@ -160,9 +160,20 @@ async function sendOrder(platform) {
         let message = `*ШИНЭ ЗАХИАЛГА*\n👤: ${user.displayName}\n📞: ${phone}\n📍: ${office}\n\n${itemsText}💰: ${total.toLocaleString()}₮`;
         const myNumber = "97699921202"; 
         const url = platform === 'whatsapp' ? `https://wa.me/${myNumber}?text=${encodeURIComponent(message)}` : `https://t.me/AnarGantumur?text=${encodeURIComponent(message)}`;
+        
+        // ЗАХИАЛГА АМЖИЛТТАЙ БОЛСОН ТУЛ САГСЫГ ЦЭВЭРЛЭХ ХЭСЭГ:
+        cart = [];
+        total = 0;
+        updateCartUI(); 
+        
         window.open(url, '_blank');
         loadOrderHistory(user.displayName);
-    } catch (e) { alert("Алдаа гарлаа"); }
+        
+        Swal.fire("Амжилттай", "Захиалгыг илгээлээ!", "success");
+    } catch (e) { 
+        console.error(e);
+        alert("Алдаа гарлаа"); 
+    }
 }
 
 function copyText(text, msg) {
@@ -170,3 +181,4 @@ function copyText(text, msg) {
         Swal.fire({ title: msg, icon: 'success', timer: 1000, showConfirmButton: false, toast: true, position: 'top' });
     });
 }
+
