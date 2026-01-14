@@ -19,9 +19,11 @@
         input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 15px; }
         .bank-selector { background: #fff; border: 2px solid #5d4037; border-radius: 15px; padding: 12px 15px; margin-top: 10px; cursor: pointer; display: flex; align-items: center; }
         .bank-logo { width: 45px; height: 45px; object-fit: contain; margin-right: 15px; }
-        .bank-info { display: none; margin-top: 10px; padding: 15px; background: #fdfaf8; border-radius: 12px; border-top: 1px dashed #5d4037; }
-        .copy-item { background: #fff; padding: 10px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #eee; cursor: pointer; }
-        .label { font-size: 11px; color: #888; display: block; }
+        .bank-info { display: none; margin-top: 10px; padding: 15px; background: #fdfaf8; border-radius: 12px; border: 1px solid #eee; }
+        .copy-item { background: #fff; padding: 12px; border-radius: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #eee; cursor: pointer; transition: 0.2s; }
+        .copy-item:active { transform: scale(0.98); background: #f0f0f0; }
+        .label { font-size: 11px; color: #888; display: block; text-transform: uppercase; }
+        .acc-name { color: #2ecc71; font-weight: bold; font-size: 14px; margin-top: 2px; display: block; }
         .order-buttons { display: flex; gap: 10px; margin-top: 20px; }
         .order-btn { flex: 1; padding: 15px; border: none; border-radius: 10px; color: white; font-weight: bold; cursor: pointer; }
         .google-btn { background: white; border: 1px solid #ddd; padding: 12px; border-radius: 10px; width: 100%; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
@@ -59,17 +61,26 @@
 
         <div class="bank-selector" onclick="toggleBank('mbank-info')"><img src="bank-logo-mbank.png" class="bank-logo"><strong>М-Банк</strong></div>
         <div id="mbank-info" class="bank-info">
-            <div class="copy-item" onclick="copyText('980039008010043724', 'Хуулагдлаа')"><div><span class="label">Данс</span><strong>980039008010043724</strong></div><span>Хуулах</span></div>
+            <div class="copy-item" onclick="copyText('980039008010043724', 'М-Банк хуулагдлаа')">
+                <div><span class="label">Данс: 980039008010043724</span><span class="acc-name">Алтан-Очир Хонгорзул</span></div>
+                <small style="color:#0088cc;">Хуулах</small>
+            </div>
         </div>
 
         <div class="bank-selector" onclick="toggleBank('golomt-info')"><img src="bank-logo-golomt.png" class="bank-logo"><strong>Голомт Банк</strong></div>
         <div id="golomt-info" class="bank-info">
-            <div class="copy-item" onclick="copyText('890015001205153549', 'Хуулагдлаа')"><div><span class="label">Данс</span><strong>890015001205153549</strong></div><span>Хуулах</span></div>
+            <div class="copy-item" onclick="copyText('890015001205153549', 'Голомт банк хуулагдлаа')">
+                <div><span class="label">Данс: 890015001205153549</span><span class="acc-name">Алтан-Очир Хонгорзул</span></div>
+                <small style="color:#0088cc;">Хуулах</small>
+            </div>
         </div>
 
         <div class="bank-selector" onclick="toggleBank('state-info')"><img src="bank-logo-state.png" class="bank-logo"><strong>Төрийн Банк</strong></div>
         <div id="state-info" class="bank-info">
-            <div class="copy-item" onclick="copyText('610034108801485289', 'Хуулагдлаа')"><div><span class="label">Данс</span><strong>610034108801485289</strong></div><span>Хуулах</span></div>
+            <div class="copy-item" onclick="copyText('610034108801485289', 'Төрийн банк хуулагдлаа')">
+                <div><span class="label">Данс: 610034108801485289</span><span class="acc-name">Алтан-Очир Хонгорзул</span></div>
+                <small style="color:#0088cc;">Хуулах</small>
+            </div>
         </div>
 
         <div class="order-buttons">
