@@ -14,12 +14,11 @@
         h1 { text-align: center; color: #5d4037; font-size: 22px; margin-bottom: 20px; }
         .item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
         .item-name { cursor: pointer; color: #5d4037; font-weight: 500; border-bottom: 1px dashed #2ecc71; }
-        .item-name:hover { color: #2ecc71; }
         .add-btn { cursor: pointer; background: #5d4037; color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; }
         #cart { margin-top: 30px; border-top: 2px solid #5d4037; padding-top: 15px; }
         input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 15px; }
         .bank-selector { background: #fff; border: 2px solid #5d4037; border-radius: 15px; padding: 12px 15px; margin-top: 10px; cursor: pointer; display: flex; align-items: center; }
-        .bank-logo { width: 50px; height: 50px; object-fit: contain; margin-right: 15px; }
+        .bank-logo { width: 45px; height: 45px; object-fit: contain; margin-right: 15px; }
         .bank-info { display: none; margin-top: 10px; padding: 15px; background: #fdfaf8; border-radius: 12px; border-top: 1px dashed #5d4037; }
         .copy-item { background: #fff; padding: 10px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #eee; cursor: pointer; }
         .label { font-size: 11px; color: #888; display: block; }
@@ -48,7 +47,7 @@
     <div id="menu">
         <div class="item"><span class="item-name" onclick="showProductImage('burger_real.jpg', 'Бүргер')">🍔 Бүргер - 7,000₮</span><button class="add-btn" onclick="addToCart('Бүргер', 7000)">Нэмэх</button></div>
         <div class="item"><span class="item-name" onclick="showProductImage('sandwich_real.jpg', 'Сэндвич')">🥪 Сэндвич - 6,000₮</span><button class="add-btn" onclick="addToCart('Сэндвич', 6000)">Нэмэх</button></div>
-        <div class="item"><span class="item-name" onclick="showProductImage('kimbap_real.JPG', 'Кимбаб')">🍱 Кимбаб - 4,000₮</span><button class="add-btn" onclick="addToCart('Кимбаб', 4000)">Нэмэх</button></div>
+        <div class="item"><span class="item-name" onclick="showProductImage('kimbap_real.jpg', 'Кимбаб')">🍱 Кимбаб - 4,000₮</span><button class="add-btn" onclick="addToCart('Кимбаб', 4000)">Нэмэх</button></div>
         <div class="item"><span class="item-name" onclick="showProductImage('ciabatta_real.jpg', 'Чиабатта')">🍔 Чиабатта - 7,500₮</span><button class="add-btn" onclick="addToCart('Чиабатта', 7500)">Нэмэх</button></div>
     </div>
 
@@ -61,6 +60,16 @@
         <div class="bank-selector" onclick="toggleBank('mbank-info')"><img src="bank-logo-mbank.png" class="bank-logo"><strong>М-Банк</strong></div>
         <div id="mbank-info" class="bank-info">
             <div class="copy-item" onclick="copyText('980039008010043724', 'Хуулагдлаа')"><div><span class="label">Данс</span><strong>980039008010043724</strong></div><span>Хуулах</span></div>
+        </div>
+
+        <div class="bank-selector" onclick="toggleBank('golomt-info')"><img src="bank-logo-golomt.png" class="bank-logo"><strong>Голомт Банк</strong></div>
+        <div id="golomt-info" class="bank-info">
+            <div class="copy-item" onclick="copyText('890015001205153549', 'Хуулагдлаа')"><div><span class="label">Данс</span><strong>890015001205153549</strong></div><span>Хуулах</span></div>
+        </div>
+
+        <div class="bank-selector" onclick="toggleBank('state-info')"><img src="bank-logo-state.png" class="bank-logo"><strong>Төрийн Банк</strong></div>
+        <div id="state-info" class="bank-info">
+            <div class="copy-item" onclick="copyText('610034108801485289', 'Хуулагдлаа')"><div><span class="label">Данс</span><strong>610034108801485289</strong></div><span>Хуулах</span></div>
         </div>
 
         <div class="order-buttons">
@@ -76,9 +85,10 @@
 <script>
     function toggleBank(id) {
         const el = document.getElementById(id);
+        const all = document.querySelectorAll('.bank-info');
+        all.forEach(b => { if(b.id !== id) b.style.display = 'none'; });
         el.style.display = (el.style.display === 'block') ? 'none' : 'block';
     }
 </script>
 </body>
 </html>
-
