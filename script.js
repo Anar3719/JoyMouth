@@ -13,7 +13,6 @@ const auth = firebase.auth();
 let cart = [];
 let total = 0;
 
-// ГҮЙЦЭТГЭХ ФУНКЦҮҮД
 function signInWithGoogle() {
     const provider = new firebase.auth.GoogleAuthProvider();
     auth.signInWithPopup(provider).catch(err => alert(err.message));
@@ -31,22 +30,6 @@ auth.onAuthStateChanged((user) => {
 });
 
 function logout() { auth.signOut(); }
-
-function showProductImage(imgUrl, title) {
-    Swal.fire({
-        title: title,
-        imageUrl: imgUrl,
-        imageAlt: title,
-        imageWidth: 400,
-        imageHeight: 300,
-        showCloseButton: true,
-        showConfirmButton: false,
-        background: '#fff',
-        color: '#5d4037'
-    });
-}
-
-// --- САГСНЫ ЛОГИК ---
 
 function addToCart(name, price) {
     cart.push({name, price});
@@ -82,7 +65,7 @@ function updateCartUI() {
         let subtotal = itemCounts[name].price * itemCounts[name].count;
         
         li.innerHTML = `
-            <div style="flex:1;">
+            <div style="flex:1; text-align:left;">
                 <span style="font-weight:500; color:#5d4037;">${name}</span>
                 <br><small style="color:#888;">${subtotal.toLocaleString()}₮</small>
             </div>
@@ -99,15 +82,6 @@ function updateCartUI() {
     document.getElementById('total-price').textContent = total.toLocaleString();
 }
 
-function copyText(text, msg) {
-    if (event) event.stopPropagation(); 
-    navigator.clipboard.writeText(text).then(() => {
-        Swal.fire({
-            title: msg, icon: 'success', timer: 1500, showConfirmButton: false, toast: true, position: 'top'
-        });
-    });
-}
-
 function sendOrder(platform) {
     const user = auth.currentUser;
     const office = document.getElementById('office').value;
@@ -119,9 +93,8 @@ function sendOrder(platform) {
     let itemsText = "";
     for (const name in itemCounts) { itemsText += `- ${name} x${itemCounts[name]}\n`; }
     
-    let message = `*ШИНЭ ЗАХИАЛГА*\n\n👤: ${user.displayName}\n📍: ${office}\n\n*Захиалга:*\n${itemsText}\n💰 *Нийт:* ${total.toLocaleString()}₮\n\n⚠️ Төлбөрөө төлөөд Screenshot-оо заавал илгээнэ үү!`;
+    let message = `*ШИНЭ ЗАХИАЛГА*\n\n👤: ${user.displayName}\n📍: ${office}\n\n*Захиалга:*\n${itemsText}\n💰 *Нийт:* ${total.toLocaleString()}₮`;
     const myNumber = "97699921202"; 
-    const myTelegram = "AnarGantumur";
-    const url = platform === 'whatsapp' ? `https://wa.me/${myNumber}?text=${encodeURIComponent(message)}` : `https://t.me/${myTelegram}?text=${encodeURIComponent(message)}`;
+    const url = platform === 'whatsapp' ? `https://wa.me/${myNumber}?text=${encodeURIComponent(message)}` : `https://t.me/AnarGantumur?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
 }
