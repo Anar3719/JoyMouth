@@ -109,7 +109,7 @@ async function loadOrderHistory(userId) {
         const snapshot = await db.collection("orders")
             .where("userId", "==", userId)
             .orderBy("createdAt", "desc")
-            .limit(5)
+            .limit(10)
             .get();
 
         if (snapshot.empty) { 
@@ -217,3 +217,4 @@ function copyText(text, msg) {
         Swal.fire({ title: msg, icon: 'success', timer: 1000, showConfirmButton: false, toast: true, position: 'top' });
     });
 }
+
