@@ -8,10 +8,7 @@ const firebaseConfig = {
     measurementId: "G-0DGDM401SN"
 };
 
-// Firebase-ийг эхлүүлэх
-if (!firebase.apps.length) { 
-    firebase.initializeApp(firebaseConfig); 
-}
+if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
 const auth = firebase.auth();
 const db = firebase.firestore();
 
@@ -25,41 +22,31 @@ const productImages = {
     "Чиабатта": "ciabatta_real.jpg"
 };
 
-// Бүтээгдэхүүний icon-ууд
-const productIcons = {
-    "Бүргер": "🍔",
-    "Сэндвич": "🥪",
-    "Кимбаб": "🍱",
-    "Чиабатта": "🍔"
-};
-
 function signInWithGoogle() {
     const provider = new firebase.auth.GoogleAuthProvider();
     auth.signInWithPopup(provider).catch((err) => alert("Алдаа: " + err.message));
 }
+
+function logout() { auth.signOut(); }
 
 auth.onAuthStateChanged((user) => {
     if (user) {
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('main-content').style.display = 'block';
         document.getElementById('user-info').innerText = "👤 " + user.displayName;
+        loadOrderHistory(user.displayName);
     } else {
         document.getElementById('login-screen').style.display = 'block';
         document.getElementById('main-content').style.display = 'none';
     }
 });
 
-function logout() { auth.signOut(); }
-
 function showProductImage(imgUrl, title) {
     Swal.fire({ title: title, imageUrl: imgUrl, imageWidth: 400, showCloseButton: true, showConfirmButton: false });
 }
 
-// ЭНД ICON ДАМЖУУЛАХ ХЭСГИЙГ ЗАССАН
 function addToCart(name, price, icon) {
-    // Хэрэв icon ирээгүй бол productIcons-оос авна
-    const itemIcon = icon || productIcons[name] || "🍴";
-    cart.push({name, price, icon: itemIcon});
+    cart.push({name, price, icon});
     total += price;
     updateCartUI();
 }
@@ -79,54 +66,73 @@ function updateCartUI() {
     const itemCounts = {};
 
     cart.forEach(item => {
-        if (!itemCounts[item.name]) { 
-            itemCounts[item.name] = { price: item.price, count: 0, icon: item.icon }; 
-        }
+        if (!itemCounts[item.name]) { itemCounts[item.name] = { price: item.price, count: 0, icon: item.icon }; }
         itemCounts[item.name].count++;
     });
 
     for (const name in itemCounts) {
-        let li = document.createElement('li');
-        li.className = "cart-item-container";
-        
-        let subtotal = itemCounts[name].price * itemCounts[name].count;
         let count = itemCounts[name].count;
         let icon = itemCounts[name].icon;
-        
-        // Icon-ыг тоогоор нь давтах (🍔🍔🍔)
-        let iconsHTML = icon.repeat(count);
+        let iconsHTML = "";
 
+        if (icon.includes('.png')) {
+            for(let i=0; i<count; i++) {
+                iconsHTML += `<img src="${icon}" style="width:18px; height:18px; margin-right:2px; vertical-align:middle; border-radius:50%;">`;
+            }
+        } else {
+            iconsHTML = `<span style="letter-spacing:-3px;">${icon.repeat(count)}</span>`;
+        }
+
+        let li = document.createElement('li');
+        li.className = "cart-item-container";
         li.innerHTML = `
-            <div style="display:flex; align-items:center; gap:12px; flex:1;">
-                <img src="${productImages[name] || 'headlogo.png'}" style="width:45px; height:45px; border-radius:10px; object-fit:cover;">
+            <div style="display:flex; align-items:center; gap:10px; flex:1;">
+                <img src="${productImages[name]}" style="width:40px; height:40px; border-radius:8px; object-fit:cover;">
                 <div style="flex:1; display:flex; justify-content:space-between; align-items:center; padding-right:10px;">
-                    <div>
-                        <span style="font-weight:600; color:#5d4037;">${name}</span>
-                        <br><small style="color:#888;">${subtotal.toLocaleString()}₮</small>
-                    </div>
-                    <div style="text-align:right;">
-                        <span class="item-icons">${iconsHTML}</span>
-                        <span style="color:#2ecc71; font-weight:bold; margin-left:5px;">x${count}</span>
-                    </div>
+                    <div><span style="font-weight:600; font-size:14px;">${name}</span><br><small>${(itemCounts[name].price * count).toLocaleString()}₮</small></div>
+                    <div>${iconsHTML} <span style="color:#2ecc71; font-weight:bold;">x${count}</span></div>
                 </div>
             </div>
-            <div style="display:flex; align-items:center; gap:8px;">
-                <button onclick="removeFromCart('${name}')" style="width:26px; height:26px; border-radius:50%; border:none; background:#ff7675; color:white; cursor:pointer; font-weight:bold;">-</button>
-                <button onclick="addToCart('${name}', ${itemCounts[name].price}, '${icon}')" style="width:26px; height:26px; border-radius:50%; border:none; background:#2ecc71; color:white; cursor:pointer; font-weight:bold;">+</button>
+            <div style="display:flex; gap:5px;">
+                <button onclick="removeFromCart('${name}')" style="width:24px; height:24px; border-radius:50%; border:none; background:#ff7675; color:white; cursor:pointer;">-</button>
+                <button onclick="addToCart('${name}', ${itemCounts[name].price}, '${icon}')" style="width:24px; height:24px; border-radius:50%; border:none; background:#2ecc71; color:white; cursor:pointer;">+</button>
             </div>`;
         list.appendChild(li);
     }
     document.getElementById('total-price').textContent = total.toLocaleString();
 }
 
+async function loadOrderHistory(userName) {
+    const historyList = document.getElementById('history-list');
+    try {
+        const snapshot = await db.collection("orders")
+            .where("userName", "==", userName)
+            .orderBy("createdAt", "desc")
+            .limit(5)
+            .get();
+
+        if (snapshot.empty) { historyList.innerHTML = "<p style='color:#888;'>Түүх хоосон.</p>"; return; }
+
+        let html = "";
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const date = data.createdAt ? data.createdAt.toDate().toLocaleDateString() : "Саяхан";
+            const statusColor = data.status === "Шинэ" ? "#f39c12" : (data.status === "Хүргэгдсэн" ? "#2ecc71" : "#e74c3c");
+            html += `
+                <div style="background:#fff; padding:10px; border-radius:12px; margin-bottom:8px; border:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+                    <div><strong style="font-size:13px;">${date}</strong><br><small style="color:#666;">${data.totalPrice.toLocaleString()}₮</small></div>
+                    <span style="background:${statusColor}; color:white; padding:3px 8px; border-radius:10px; font-size:10px; font-weight:bold;">${data.status}</span>
+                </div>`;
+        });
+        historyList.innerHTML = html;
+    } catch (e) { historyList.innerHTML = "<p>Ачаалахад алдаа гарлаа.</p>"; }
+}
+
 async function sendOrder(platform) {
     const user = auth.currentUser;
     const office = document.getElementById('office').value;
     const phone = document.getElementById('phone').value;
-
-    if (!user || cart.length === 0 || !office || !phone) { 
-        return Swal.fire("Мэдээлэл дутуу", "Утас, хаяг болон сагсаа шалгана уу!", "warning"); 
-    }
+    if (!user || cart.length === 0 || !office || !phone) { return Swal.fire("Дутуу", "Мэдээллээ бүрэн оруулна уу", "warning"); }
 
     const itemCounts = {};
     cart.forEach(item => { itemCounts[item.name] = (itemCounts[item.name] || 0) + 1; });
@@ -141,18 +147,15 @@ async function sendOrder(platform) {
             status: "Шинэ",
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
-
+        
         let itemsText = "";
         for (const name in itemCounts) { itemsText += `- ${name} x${itemCounts[name]}\n`; }
-        
-        let message = `*ШИНЭ ЗАХИАЛГА*\n👤: ${user.displayName}\n📞: ${phone}\n📍: ${office}\n\n*Захиалга:*\n${itemsText}💰: ${total.toLocaleString()}₮`;
-        
+        let message = `*ШИНЭ ЗАХИАЛГА*\n👤: ${user.displayName}\n📞: ${phone}\n📍: ${office}\n\n${itemsText}💰: ${total.toLocaleString()}₮`;
         const myNumber = "97699921202"; 
         const url = platform === 'whatsapp' ? `https://wa.me/${myNumber}?text=${encodeURIComponent(message)}` : `https://t.me/AnarGantumur?text=${encodeURIComponent(message)}`;
         window.open(url, '_blank');
-    } catch (e) {
-        alert("Захиалга хадгалахад алдаа гарлаа.");
-    }
+        loadOrderHistory(user.displayName);
+    } catch (e) { alert("Алдаа гарлаа"); }
 }
 
 function copyText(text, msg) {
