@@ -8,25 +8,36 @@ const firebaseConfig = {
     measurementId: "G-0DGDM401SN"
 };
 
-if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+// Firebase-ийг эхлүүлэх
+if (!firebase.apps.length) { 
+    firebase.initializeApp(firebaseConfig); 
+}
 const auth = firebase.auth();
 let cart = [];
 let total = 0;
 
-// Зургийн замуудыг тохируулах (Сагсанд харуулахад ашиглана)
+// Зургийн замууд (Кимбаб .JPG хэвээр үлдсэн)
 const productImages = {
     "Бүргер": "burger_real.jpg",
     "Сэндвич": "sandwich_real.jpg",
-    "Кимбаб": "kimbap_real.JPG", // .JPG байсныг .jpg болгов
+    "Кимбаб": "kimbap_real.JPG", 
     "Чиабатта": "ciabatta_real.jpg"
 };
 
-// Нэвтрэх функц
+// Google нэвтрэх функц
 function signInWithGoogle() {
     const provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithPopup(provider).catch(err => alert(err.message));
+    auth.signInWithPopup(provider)
+        .then((result) => {
+            console.log("Амжилттай нэвтэрлээ");
+        })
+        .catch((err) => {
+            console.error("Алдаа:", err.message);
+            alert("Нэвтрэхэд алдаа гарлаа: " + err.message);
+        });
 }
 
+// Нэвтрэх төлөвийг хянах
 auth.onAuthStateChanged((user) => {
     if (user) {
         document.getElementById('login-screen').style.display = 'none';
@@ -38,9 +49,11 @@ auth.onAuthStateChanged((user) => {
     }
 });
 
-function logout() { auth.signOut(); }
+function logout() { 
+    auth.signOut(); 
+}
 
-// Зураг харуулах функц
+// Поп-ап зураг харуулах
 function showProductImage(imgUrl, title) {
     Swal.fire({
         title: title,
@@ -55,13 +68,14 @@ function showProductImage(imgUrl, title) {
     });
 }
 
-// Сагсны логик
+// Сагсанд нэмэх
 function addToCart(name, price) {
     cart.push({name, price});
     total += price;
     updateCartUI();
 }
 
+// Сагснаас хасах
 function removeFromCart(name) {
     const index = cart.findIndex(item => item.name === name);
     if (index > -1) {
@@ -71,10 +85,12 @@ function removeFromCart(name) {
     }
 }
 
+// Сагсны харагдацыг шинэчлэх
 function updateCartUI() {
     const list = document.getElementById('cart-items');
     list.innerHTML = "";
     const itemCounts = {};
+
     cart.forEach(item => {
         if (!itemCounts[item.name]) {
             itemCounts[item.name] = { price: item.price, count: 0 };
@@ -89,10 +105,49 @@ function updateCartUI() {
         
         let subtotal = itemCounts[name].price * itemCounts[name].count;
         let imgUrl = productImages[name] || 'headlogo.png';
-        let count = itemCounts[name].count; // Барааны тоо
+        let count = itemCounts[name].count;
 
         li.innerHTML = `
             <div style="display:flex; align-items:center; gap:12px; flex:1;">
                 <img src="${imgUrl}" style="width:45px; height:45px; border-radius:8px; object-fit:cover; border:1px solid #eee;">
                 <div style="text-align:left;">
-                    <span style="font-weight:600; color
+                    <span style="font-weight:600; color:#5d4037; font-size:14px;">${name} <span style="color:#2ecc71;">x${count}</span></span>
+                    <br><small style="color:#888;">${subtotal.toLocaleString()}₮</small>
+                </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px; background:#f4f7f6; padding:5px 10px; border-radius:20px;">
+                <button onclick="removeFromCart('${name}')" style="width:28px; height:28px; border-radius:50%; border:none; background:#ff7675; color:white; font-weight:bold; cursor:pointer;">-</button>
+                <span style="font-weight:bold; min-width:20px; text-align:center;">${count}</span>
+                <button onclick="addToCart('${name}', ${itemCounts[name].price})" style="width:28px; height:28px; border-radius:50%; border:none; background:#2ecc71; color:white; font-weight:bold; cursor:pointer;">+</button>
+            </div>`;
+        list.appendChild(li);
+    }
+    document.getElementById('total-price').textContent = total.toLocaleString();
+}
+
+function copyText(text, msg) {
+    navigator.clipboard.writeText(text).then(() => {
+        Swal.fire({ title: msg, icon: 'success', timer: 1500, showConfirmButton: false, toast: true, position: 'top' });
+    });
+}
+
+function sendOrder(platform) {
+    const user = auth.currentUser;
+    const office = document.getElementById('office').value;
+    if (!user || cart.length === 0 || !office) { 
+        return alert("Мэдээллээ бүрэн оруулна уу!"); 
+    }
+    
+    const itemCounts = {};
+    cart.forEach(item => { itemCounts[item.name] = (itemCounts[item.name] || 0) + 1; });
+    
+    let itemsText = "";
+    for (const name in itemCounts) { 
+        itemsText += `- ${name} x${itemCounts[name]}\n`; 
+    }
+    
+    let message = `*ШИНЭ ЗАХИАЛГА*\n\n👤: ${user.displayName}\n📍: ${office}\n\n*Захиалга:*\n${itemsText}\n💰 *Нийт:* ${total.toLocaleString()}₮\n\n⚠️ Төлбөрөө төлөөд Screenshot-оо заавал илгээнэ үү!`;
+    const myNumber = "97699921202"; 
+    const url = platform === 'whatsapp' ? `https://wa.me/${myNumber}?text=${encodeURIComponent(message)}` : `https://t.me/AnarGantumur?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
+}
