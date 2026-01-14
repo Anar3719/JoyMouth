@@ -15,7 +15,17 @@
         .item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
         .item-name { cursor: pointer; color: #5d4037; font-weight: 500; border-bottom: 1px dashed #2ecc71; }
         .add-btn { cursor: pointer; background: #5d4037; color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; }
+        
+        /* Сагсны шинэ загвар */
         #cart { margin-top: 30px; border-top: 2px solid #5d4037; padding-top: 15px; }
+        .cart-item-container { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+        .cart-item-info { display: flex; align-items: center; gap: 12px; }
+        .cart-item-img { width: 45px; height: 45px; border-radius: 8px; object-fit: cover; border: 1px solid #eee; }
+        .cart-controls { display: flex; align-items: center; gap: 10px; background: #f4f7f6; padding: 5px 10px; border-radius: 20px; }
+        .control-btn { width: 26px; height: 26px; border-radius: 50%; border: none; color: white; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .minus-btn { background: #ff7675; }
+        .plus-btn { background: #2ecc71; }
+        
         input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 15px; }
         .bank-selector { background: #fff; border: 2px solid #5d4037; border-radius: 15px; padding: 12px 15px; margin-top: 10px; cursor: pointer; display: flex; align-items: center; }
         .bank-logo { width: 45px; height: 45px; object-fit: contain; margin-right: 15px; }
@@ -55,7 +65,8 @@
 
     <div id="cart">
         <h3>🛒 Сагс</h3>
-        <ul id="cart-items" style="list-style: none; padding: 0;"></ul>
+        <ul id="cart-items" style="list-style: none; padding: 0;">
+            </ul>
         <p style="font-size: 18px; text-align: right;"><strong>Нийт: <span id="total-price">0</span>₮</strong></p>
         <input type="text" id="office" placeholder="Хаяг: Оффис, Давхар, Өрөө">
 
@@ -103,4 +114,3 @@
 </script>
 </body>
 </html>
-
