@@ -16,8 +16,10 @@ let cart = [];
 let total = 0;
 
 const productImages = {
-    "Бүргер": "burger_real.jpg", "Сэндвич": "sandwich_real.jpg",
-    "Кимбаб": "kimbap_real.JPG", "Чиабатта": "ciabatta_real.jpg"
+    "Бүргер": "burger_real.jpg",
+    "Сэндвич": "sandwich_real.jpg",
+    "Кимбаб": "kimbap_real.JPG",
+    "Чиабатта": "ciabatta_real.jpg"
 };
 
 function getStatusColor(status) {
@@ -47,8 +49,8 @@ auth.onAuthStateChanged((user) => {
     }
 });
 
-function addToCart(name, price, icon) {
-    cart.push({name, price, icon});
+function addToCart(name, price) {
+    cart.push({name, price});
     total += price;
     updateCartUI();
 }
@@ -66,21 +68,24 @@ function updateCartUI() {
     const list = document.getElementById('cart-items');
     list.innerHTML = "";
     const counts = {};
-    cart.forEach(item => { counts[item.name] = (counts[item.name] || {p:item.price, c:0}); counts[item.name].c++; });
+    cart.forEach(item => { 
+        counts[item.name] = (counts[item.name] || {p:item.price, c:0}); 
+        counts[item.name].c++; 
+    });
 
     for (const name in counts) {
         let li = document.createElement('li');
         li.className = "cart-item-container";
         li.innerHTML = `
-            <img src="${productImages[name]}" style="width:45px; height:45px; border-radius:10px; object-fit:cover;">
+            <img src="${productImages[name]}" class="cart-item-img" onerror="this.src='https://via.placeholder.com/50'">
             <div style="flex:1;">
                 <div style="font-weight:600; font-size:14px;">${name}</div>
-                <small>${(counts[name].p * counts[name].c).toLocaleString()}₮</small>
+                <div style="color:#2ecc71; font-weight:700; font-size:13px;">${(counts[name].p * counts[name].c).toLocaleString()}₮</div>
             </div>
-            <div style="display:flex; align-items:center; gap:8px;">
-                <button onclick="removeFromCart('${name}')" style="width:24px; height:24px; border-radius:50%; border:1px solid #ddd;">-</button>
-                <span style="font-weight:bold;">${counts[name].c}</span>
-                <button onclick="addToCart('${name}', ${counts[name].p}, '')" style="width:24px; height:24px; border-radius:50%; border:1px solid #ddd;">+</button>
+            <div class="quantity-controls">
+                <button class="qty-btn" onclick="removeFromCart('${name}')">-</button>
+                <span style="font-weight:800; min-width:15px; text-align:center;">${counts[name].c}</span>
+                <button class="qty-btn" onclick="addToCart('${name}', ${counts[name].p})">+</button>
             </div>`;
         list.appendChild(li);
     }
@@ -91,7 +96,7 @@ async function sendOrder() {
     const user = auth.currentUser;
     const office = document.getElementById('office').value;
     const phone = document.getElementById('phone').value;
-    if (!user || cart.length === 0 || !office || !phone) return Swal.fire("Дутуу", "Мэдээллээ шалгана уу", "warning");
+    if (!user || cart.length === 0 || !office || !phone) return Swal.fire("Мэдээлэл дутуу", "Хаяг болон утсаа оруулна уу", "warning");
 
     const itemCounts = {};
     cart.forEach(item => { itemCounts[item.name] = (itemCounts[item.name] || 0) + 1; });
@@ -103,25 +108,28 @@ async function sendOrder() {
             status: "Шинэ", createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         cart = []; total = 0; updateCartUI();
-        Swal.fire("Амжилттай", "Захиалга илгээгдлээ", "success");
+        Swal.fire("Амжилттай", "Захиалга хүлээн авлаа", "success");
     } catch (e) { Swal.fire("Алдаа", e.message, "error"); }
 }
 
 function observeOrderHistory(userId) {
     const historyList = document.getElementById('history-list');
-    db.collection("orders").where("userId", "==", userId).orderBy("createdAt", "desc").limit(10)
+    db.collection("orders").where("userId", "==", userId).orderBy("createdAt", "desc").limit(8)
     .onSnapshot((snapshot) => {
         let html = "";
         snapshot.forEach(doc => {
             const data = doc.data();
-            const date = data.createdAt ? data.createdAt.toDate().toLocaleDateString() : "Саяхан";
             const color = getStatusColor(data.status);
+            const date = data.createdAt ? data.createdAt.toDate().toLocaleDateString() : "Саяхан";
             html += `
-                <div style="background:white; padding:15px; border-radius:15px; margin-bottom:10px; border-left:6px solid ${color}; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
-                    <div><strong>📅 ${date}</strong><br><small>${data.totalPrice.toLocaleString()}₮</small></div>
-                    <span style="background:${color}; color:white; padding:5px 12px; border-radius:20px; font-size:11px; font-weight:bold;">${data.status}</span>
+                <div class="history-card" style="border-left: 5px solid ${color}; background:white; padding:15px; border-radius:15px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
+                    <div>
+                        <div style="font-weight:700; font-size:14px;">📅 ${date}</div>
+                        <small style="color:#666;">${data.totalPrice.toLocaleString()}₮</small>
+                    </div>
+                    <span style="background:${color}; color:white; padding:4px 12px; border-radius:20px; font-size:11px; font-weight:800;">${data.status}</span>
                 </div>`;
         });
-        historyList.innerHTML = html || "<p>Түүх хоосон байна.</p>";
+        historyList.innerHTML = html || "<p style='color:#999;'>Түүх хоосон байна.</p>";
     });
 }
