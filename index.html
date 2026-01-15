@@ -7,94 +7,65 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #2ecc71; --dark: #1e272e; --bg: #f4f7f6; }
+        :root { --primary: #2ecc71; --bg: #f4f7f6; }
         body { font-family: 'Inter', sans-serif; margin: 0; background: var(--bg); display: flex; height: 100vh; overflow: hidden; }
-        
-        /* Sidebar */
         .sidebar { width: 260px; background: white; border-right: 1px solid #eee; display: flex; flex-direction: column; padding: 25px; }
-        .logo { font-size: 24px; font-weight: 800; margin-bottom: 30px; }
-        .nav-item { padding: 12px; margin-bottom: 8px; border-radius: 10px; cursor: pointer; color: #7f8c8d; font-weight: 600; transition: 0.3s; }
-        .nav-item:hover, .nav-item.active { background: #f0fff4; color: var(--primary); }
-
-        /* Main Content */
         .main-content { flex: 1; overflow-y: auto; padding: 40px; }
         .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 30px; margin-top: 20px; }
         .product-card { background: white; border-radius: 20px; padding: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.03); position: relative; text-align: center; }
         .product-img { width: 100%; height: 200px; object-fit: cover; border-radius: 15px; cursor: pointer; }
         .add-btn { position: absolute; bottom: 20px; right: 20px; background: var(--primary); color: white; border: none; width: 40px; height: 40px; border-radius: 12px; font-size: 24px; cursor: pointer; }
-
-        /* Cart Sidebar */
         .cart-sidebar { width: 380px; background: white; border-left: 1px solid #eee; display: flex; flex-direction: column; padding: 30px; }
         #cart-items { flex: 1; overflow-y: auto; list-style: none; padding: 0; }
-        .cart-item-container { display: flex; align-items: center; gap: 10px; padding: 15px 0; border-bottom: 1px solid #f9f9f9; }
         .order-form { background: #f8fafc; padding: 20px; border-radius: 15px; margin-top: 20px; }
-        .order-form input { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; }
+        .order-form input { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 10px; border: 1px solid #ddd; }
         .checkout-btn { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; }
-
-        /* History */
-        #history-list { margin-top: 20px; }
-        
         #login-screen { position: fixed; inset: 0; background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
     </style>
 </head>
 <body>
-    <div id="login-screen">
-        <h1 style="font-weight: 800; font-size: 40px;">Joy Mouth 👨‍🍳</h1>
-        <button onclick="signInWithGoogle()" style="padding: 15px 30px; background: #4285F4; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold;">Google-ээр нэвтрэх</button>
-    </div>
-
+    <div id="login-screen"><button onclick="signInWithGoogle()" style="padding:15px; cursor:pointer;">Google-ээр нэвтрэх</button></div>
     <div id="main-content" style="display:none; width: 100%; display: flex;">
         <div class="sidebar">
-            <div class="logo">👨‍🍳 Joy Mouth</div>
-            <div class="nav-item active">🏠 Бүх хоол</div>
-            <div id="user-info" style="margin-top: auto; font-size: 13px; color: #94a3b8; margin-bottom: 10px;"></div>
-            <div class="nav-item" onclick="logout()" style="color: #e74c3c;">🚪 Гарах</div>
+            <div class="logo" style="font-weight:800; font-size:24px;">👨‍🍳 Joy Mouth</div>
+            <div id="user-info" style="margin-top:auto; font-size:12px; color:#94a3b8;"></div>
+            <button onclick="logout()" style="padding:10px; cursor:pointer;">Гарах</button>
         </div>
-
         <div class="main-content">
             <h2 style="font-weight: 800;">👨‍🍳 Үндсэн цэс</h2>
             <div class="grid-container" id="product-grid"></div>
-
             <h2 style="font-weight: 800; margin-top: 50px;">📜 Сүүлийн захиалгууд</h2>
             <div id="history-list"></div>
         </div>
-
         <div class="cart-sidebar">
-            <h3 style="font-weight: 800;">Миний сагс</h3>
+            <h3>Миний сагс</h3>
             <ul id="cart-items"></ul>
             <div class="order-form">
-                <div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 20px; margin-bottom: 15px;">
-                    <span>Нийт:</span><span><span id="total-price">0</span>₮</span>
-                </div>
+                <div style="display:flex; justify-content:space-between; font-weight:800;"><span>Нийт:</span><span><span id="total-price">0</span>₮</span></div>
                 <input type="text" id="office" placeholder="📍 Хаяг">
                 <input type="number" id="phone" placeholder="📞 Утас">
                 <button class="checkout-btn" onclick="sendOrder()">ЗАХИАЛГА ИЛГЭЭХ</button>
             </div>
         </div>
     </div>
-
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <script src="script.js"></script>
     <script>
         const products = [
-            { name: "Бүргер", price: 7000, icon: "🍔", img: "burger_real.jpg" },
-            { name: "Сэндвич", price: 6500, icon: "🥪", img: "sandwich_real.jpg" },
-            { name: "Кимбаб", price: 4000, icon: "🍱", img: "kimbap_real.JPG" },
-            { name: "Чиабатта", price: 8000, icon: "🥖", img: "ciabatta_real.jpg" }
+            { name: "Бүргер", price: 7000, img: "burger_real.jpg" },
+            { name: "Сэндвич", price: 6500, img: "sandwich_real.jpg" },
+            { name: "Кимбаб", price: 4000, img: "kimbap_real.JPG" },
+            { name: "Чиабатта", price: 8000, img: "ciabatta_real.jpg" }
         ];
-        function render() {
-            document.getElementById('product-grid').innerHTML = products.map(p => `
-                <div class="product-card">
-                    <img src="${p.img}" class="product-img" onclick="showProductImage('${p.img}', '${p.name}')" onerror="this.src='https://via.placeholder.com/300x200'">
-                    <h3>${p.name}</h3>
-                    <p style="font-weight:800; color:#2ecc71;">${p.price.toLocaleString()}₮</p>
-                    <button class="add-btn" onclick="addToCart('${p.name}', ${p.price}, '${p.icon}')">+</button>
-                </div>
-            `).join('');
-        }
-        render();
+        document.getElementById('product-grid').innerHTML = products.map(p => `
+            <div class="product-card">
+                <img src="${p.img}" class="product-img" onclick="showProductImage('${p.img}', '${p.name}')" onerror="this.src='https://via.placeholder.com/300x200'">
+                <h3>${p.name}</h3>
+                <p style="font-weight:800; color:#2ecc71;">${p.price.toLocaleString()}₮</p>
+                <button class="add-btn" onclick="addToCart('${p.name}', ${p.price}, '')">+</button>
+            </div>`).join('');
     </script>
 </body>
 </html>
