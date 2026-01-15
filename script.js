@@ -22,6 +22,19 @@ const productImages = {
     "Чиабатта": "ciabatta_real.jpg"
 };
 
+// --- ТӨЛӨВИЙН ӨНГӨ ТОДОРХОЙЛОХ ФУНКЦ ---
+function getStatusColor(status) {
+    switch(status) {
+        case "Шинэ": return "#f39c12"; // Улбар шар
+        case "Төлбөр хүлээгдэж байна": return "#3498db"; // Цэнхэр
+        case "Бэлтгэгдэж байна": return "#9b59b6"; // Нил ягаан
+        case "Хүргэлтэнд гарсан": return "#e67e22"; // Гүн улбар шар
+        case "Хүргэгдсэн": return "#2ecc71"; // Ногоон
+        case "Цуцлагдсан": return "#e74c3c"; // Улаан
+        default: return "#95a5a6";
+    }
+}
+
 function signInWithGoogle() {
     const provider = new firebase.auth.GoogleAuthProvider();
     auth.signInWithPopup(provider).catch((err) => alert("Алдаа: " + err.message));
@@ -34,7 +47,6 @@ auth.onAuthStateChanged((user) => {
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('main-content').style.display = 'block';
         document.getElementById('user-info').innerText = "👤 " + user.displayName;
-        // Захиалгын түүхийг Real-time сонсох (onSnapshot ашиглав)
         observeOrderHistory(user.uid); 
     } else {
         document.getElementById('login-screen').style.display = 'block';
@@ -103,7 +115,7 @@ function updateCartUI() {
     document.getElementById('total-price').textContent = total.toLocaleString();
 }
 
-// ЗАХИАЛГЫН ТҮҮХИЙГ БОДИТ ЦАГТ ХЯНАХ (Admin-аас статус өөрчлөхөд шууд солигдоно)
+// ЗАХИАЛГЫН ТҮҮХИЙГ БОДИТ ЦАГТ ХЯНАХ (ШИНЭЧЛЭГДСЭН)
 function observeOrderHistory(userId) {
     const historyList = document.getElementById('history-list');
     db.collection("orders")
@@ -120,12 +132,18 @@ function observeOrderHistory(userId) {
             snapshot.forEach(doc => {
                 const data = doc.data();
                 const date = data.createdAt ? data.createdAt.toDate().toLocaleDateString() : "Саяхан";
-                const statusColor = data.status === "Шинэ" ? "#f39c12" : (data.status === "Хүргэгдсэн" ? "#2ecc71" : "#e74c3c");
+                // Сонгосон төлөвөөс хамаарч өнгө авах
+                const statusColor = getStatusColor(data.status);
                 
                 html += `
-                    <div onclick="showOrderDetails('${doc.id}')" style="cursor:pointer; background:#fff; padding:10px; border-radius:12px; margin-bottom:8px; border:1px solid #eee; display:flex; justify-content:space-between; align-items:center; transition:0.3s;" onmouseover="this.style.borderColor='#2ecc71'" onmouseout="this.style.borderColor='#eee'">
-                        <div><strong style="font-size:13px;">📅 ${date}</strong><br><small style="color:#666;">${data.totalPrice.toLocaleString()}₮ (Дэлгэрэнгүй)</small></div>
-                        <span style="background:${statusColor}; color:white; padding:3px 8px; border-radius:10px; font-size:10px; font-weight:bold;">${data.status}</span>
+                    <div onclick="showOrderDetails('${doc.id}')" style="cursor:pointer; background:#fff; padding:12px; border-radius:12px; margin-bottom:8px; border-left: 6px solid ${statusColor}; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display:flex; justify-content:space-between; align-items:center; transition:0.3s;" onmouseover="this.style.transform='scale(1.01)'" onmouseout="this.style.transform='scale(1)'">
+                        <div>
+                            <strong style="font-size:13px;">📅 ${date}</strong><br>
+                            <small style="color:#666;">${data.totalPrice.toLocaleString()}₮ (Дэлгэрэнгүй)</small>
+                        </div>
+                        <span style="background:${statusColor}; color:white; padding:4px 10px; border-radius:15px; font-size:11px; font-weight:bold; min-width:80px; text-align:center;">
+                            ${data.status}
+                        </span>
                     </div>`;
             });
             historyList.innerHTML = html;
@@ -151,12 +169,13 @@ async function showOrderDetails(orderId) {
         Swal.fire({
             title: 'Захиалгын мэдээлэл',
             html: `
-                <div style="text-align:left; font-size:14px; margin-bottom:15px; color:#555;">
-                    <p>📍 Хаяг: ${data.address}</p>
-                    <p>📞 Утас: ${data.userPhone}</p>
+                <div style="text-align:left; font-size:14px; margin-bottom:15px; color:#555; background:#f9f9f9; padding:10px; border-radius:8px;">
+                    <p style="margin:5px 0;">📍 Хаяг: <strong>${data.address}</strong></p>
+                    <p style="margin:5px 0;">📞 Утас: <strong>${data.userPhone}</strong></p>
+                    <p style="margin:5px 0;">📊 Төлөв: <strong style="color:${getStatusColor(data.status)}">${data.status}</strong></p>
                 </div>
                 ${itemsHtml}
-                <div style="margin-top:15px; font-weight:bold; border-top:2px solid #eee; padding-top:10px; font-size:16px;">
+                <div style="margin-top:15px; font-weight:bold; border-top:2px solid #eee; padding-top:10px; font-size:18px; color:#2c3e50;">
                     Нийт үнэ: ${data.totalPrice.toLocaleString()}₮
                 </div>`,
             confirmButtonText: 'Хаах',
@@ -167,7 +186,6 @@ async function showOrderDetails(orderId) {
     }
 }
 
-// ШИНЭЧЛЭГДСЭН ЗАХИАЛГА ӨГӨХ ФУНКЦ (Admin-д шууд харагдана)
 async function sendOrder() {
     const user = auth.currentUser;
     const office = document.getElementById('office').value;
@@ -188,18 +206,17 @@ async function sendOrder() {
             address: office,
             items: itemCounts,
             totalPrice: total,
-            status: "Шинэ",
+            status: "Шинэ", // Анхны төлөв
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         
-        // Сагс цэвэрлэх
         cart = [];
         total = 0;
         updateCartUI(); 
         
         Swal.fire({
             title: "Амжилттай!",
-            text: "Таны захиалгыг хүлээн авлаа. Түүх хэсгээс төлөвөө харна уу.",
+            text: "Таны захиалгыг хүлээн авлаа. Төлбөрөө шилжүүлж баталгаажуулна уу.",
             icon: "success",
             confirmButtonColor: "#2ecc71"
         });
