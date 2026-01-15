@@ -78,9 +78,9 @@ function updateCartUI() {
                 <small>${(counts[name].p * counts[name].c).toLocaleString()}₮</small>
             </div>
             <div style="display:flex; align-items:center; gap:8px;">
-                <button onclick="removeFromCart('${name}')" style="width:24px; height:24px; border-radius:50%; border:1px solid #ddd; background:white;">-</button>
+                <button onclick="removeFromCart('${name}')" style="width:24px; height:24px; border-radius:50%; border:1px solid #ddd;">-</button>
                 <span style="font-weight:bold;">${counts[name].c}</span>
-                <button onclick="addToCart('${name}', ${counts[name].p}, '')" style="width:24px; height:24px; border-radius:50%; border:1px solid #ddd; background:white;">+</button>
+                <button onclick="addToCart('${name}', ${counts[name].p}, '')" style="width:24px; height:24px; border-radius:50%; border:1px solid #ddd;">+</button>
             </div>`;
         list.appendChild(li);
     }
@@ -111,27 +111,17 @@ function observeOrderHistory(userId) {
     const historyList = document.getElementById('history-list');
     db.collection("orders").where("userId", "==", userId).orderBy("createdAt", "desc").limit(10)
     .onSnapshot((snapshot) => {
-        if (snapshot.empty) { historyList.innerHTML = "<p style='color:#888;'>Түүх хоосон байна.</p>"; return; }
         let html = "";
         snapshot.forEach(doc => {
             const data = doc.data();
             const date = data.createdAt ? data.createdAt.toDate().toLocaleDateString() : "Саяхан";
             const color = getStatusColor(data.status);
             html += `
-                <div onclick="showOrderDetails('${doc.id}')" style="cursor:pointer; background:white; padding:15px; border-radius:15px; margin-bottom:10px; border-left:6px solid ${color}; box-shadow:0 2px 5px rgba(0,0,0,0.05); display:flex; justify-content:space-between; align-items:center;">
+                <div style="background:white; padding:15px; border-radius:15px; margin-bottom:10px; border-left:6px solid ${color}; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
                     <div><strong>📅 ${date}</strong><br><small>${data.totalPrice.toLocaleString()}₮</small></div>
                     <span style="background:${color}; color:white; padding:5px 12px; border-radius:20px; font-size:11px; font-weight:bold;">${data.status}</span>
                 </div>`;
         });
-        historyList.innerHTML = html;
+        historyList.innerHTML = html || "<p>Түүх хоосон байна.</p>";
     });
 }
-
-async function showOrderDetails(id) {
-    const doc = await db.collection("orders").doc(id).get();
-    const data = doc.data();
-    let items = Object.entries(data.items).map(([n, c]) => `<li>${n} x ${c}</li>`).join('');
-    Swal.fire({ title: 'Захиалга', html: `<div style="text-align:left;">📍 ${data.address}<br>📞 ${data.userPhone}<hr><ul>${items}</ul></div>` });
-}
-
-function showProductImage(url, title) { Swal.fire({ title: title, imageUrl: url, imageWidth: 400 }); }
