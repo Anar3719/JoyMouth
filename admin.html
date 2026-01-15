@@ -9,17 +9,12 @@
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
         .admin-container { max-width: 800px; margin: auto; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: white; padding: 15px 25px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .order-card { background: white; padding: 20px; border-radius: 15px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: relative; border-left: 5px solid #f39c12; }
-        .order-card.delivered { border-left-color: #2ecc71; opacity: 0.8; }
-        .order-card.cancelled { border-left-color: #e74c3c; }
+        .order-card { background: white; padding: 20px; border-radius: 15px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: relative; border-left: 8px solid #f39c12; }
         .order-header { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px; }
         .items-list { background: #f9f9f9; padding: 10px; border-radius: 8px; margin: 10px 0; }
-        .controls { display: flex; gap: 10px; margin-top: 15px; }
-        button { cursor: pointer; padding: 10px 20px; border: none; border-radius: 8px; font-weight: bold; transition: 0.2s; }
-        .btn-ready { background: #2ecc71; color: white; flex: 2; }
-        .btn-ready:hover { background: #27ae60; }
-        .btn-cancel { background: #ecf0f1; color: #7f8c8d; flex: 1; }
-        .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; color: white; }
+        .controls { display: flex; flex-direction: column; gap: 8px; margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 12px; }
+        .status-select { padding: 10px; border-radius: 8px; border: 2px solid #ddd; font-weight: 600; cursor: pointer; width: 100%; }
+        .status-badge { padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: bold; color: white; text-transform: uppercase; }
     </style>
 </head>
 <body>
@@ -29,7 +24,6 @@
         <h2>👨‍🍳 Joy Mouth Admin</h2>
         <div id="stats" style="font-weight: bold; color: #5d4037;">Холбогдож байна...</div>
     </div>
-
     <div id="admin-orders-list">
         <p style="text-align: center; color: #888;">Захиалга ачаалж байна...</p>
     </div>
@@ -38,7 +32,8 @@
 <audio id="notif-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
 
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script> <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
 <script>
     const firebaseConfig = {
@@ -56,89 +51,63 @@
     const sound = document.getElementById('notif-sound');
     let lastOrderCount = -1;
 
-    // НЭВТРЭХ ХЭСЭГ (Auth)
-    firebase.auth().onAuthStateChanged((user) => {
-        if (user) {
-            console.log("Нэвтэрсэн админ:", user.email);
-            startListeningOrders(); // Нэвтэрсэн бол захиалга уншиж эхэлнэ
-        } else {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            firebase.auth().signInWithPopup(provider).catch(err => {
-                alert("Нэвтрэхэд алдаа гарлаа: " + err.message);
-            });
+    const statusOptions = ["Шинэ", "Төлбөр хүлээгдэж байна", "Бэлтгэгдэж байна", "Хүргэлтэнд гарсан", "Хүргэгдсэн", "Цуцлагдсан"];
+
+    function getStatusColor(status) {
+        switch(status) {
+            case "Шинэ": return "#f39c12";
+            case "Төлбөр хүлээгдэж байна": return "#3498db";
+            case "Бэлтгэгдэж байна": return "#9b59b6";
+            case "Хүргэлтэнд гарсан": return "#e67e22";
+            case "Хүргэгдсэн": return "#2ecc71";
+            case "Цуцлагдсан": return "#e74c3c";
+            default: return "#95a5a6";
         }
+    }
+
+    firebase.auth().onAuthStateChanged((user) => {
+        if (user) { startListeningOrders(); } 
+        else { firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
     });
 
     function startListeningOrders() {
-        // ЗАХИАЛГУУДЫГ БОДИТ ЦАГТ ХЯНАХ
-        db.collection("orders").orderBy("createdAt", "desc").limit(20).onSnapshot((snapshot) => {
+        db.collection("orders").orderBy("createdAt", "desc").limit(30).onSnapshot((snapshot) => {
             const list = document.getElementById('admin-orders-list');
-            const stats = document.getElementById('stats');
             list.innerHTML = "";
-            
-            if (lastOrderCount !== -1 && snapshot.size > lastOrderCount) {
-                sound.play().catch(e => console.log("Дуу тоглуулахад алдаа:", e));
-            }
+            if (lastOrderCount !== -1 && snapshot.size > lastOrderCount) { sound.play(); }
             lastOrderCount = snapshot.size;
-            stats.innerText = `Нийт: ${snapshot.size} захиалга`;
-
-            if (snapshot.empty) {
-                list.innerHTML = "<p style='text-align:center; padding:50px;'>Одоогоор захиалга байхгүй байна.</p>";
-                return;
-            }
+            document.getElementById('stats').innerText = `Нийт: ${snapshot.size}`;
 
             snapshot.forEach(doc => {
                 const data = doc.data();
-                const date = data.createdAt ? data.createdAt.toDate().toLocaleString() : "Саяхан";
-                const isDelivered = data.status === "Хүргэгдсэн";
-                const isCancelled = data.status === "Цуцлагдсан";
-                
-                let itemsHtml = "";
-                for (const [name, count] of Object.entries(data.items)) {
-                    itemsHtml += `<div>• ${name} <span style="float:right">x${count}</span></div>`;
-                }
+                const color = getStatusColor(data.status);
+                let itemsHtml = Object.entries(data.items).map(([n, c]) => `<div>• ${n} <span style="float:right">x${c}</span></div>`).join('');
 
-                const statusColor = data.status === "Шинэ" ? "#f39c12" : (isDelivered ? "#2ecc71" : "#e74c3c");
+                let selectHtml = `<select class="status-select" onchange="updateStatus('${doc.id}', this.value)" style="border-color:${color}">`;
+                statusOptions.forEach(opt => selectHtml += `<option value="${opt}" ${data.status === opt ? 'selected' : ''}>${opt}</option>`);
+                selectHtml += `</select>`;
 
                 const card = document.createElement('div');
-                card.className = `order-card ${isDelivered ? 'delivered' : ''} ${isCancelled ? 'cancelled' : ''}`;
+                card.className = 'order-card';
+                card.style.borderLeftColor = color;
                 card.innerHTML = `
                     <div class="order-header">
-                        <div>
-                            <strong>${data.userName || 'Нэргүй'}</strong> <br>
-                            <small style="color:#888;">${date}</small>
-                        </div>
-                        <span class="status-badge" style="background:${statusColor}">${data.status}</span>
+                        <div><strong>${data.userName}</strong><br><small>${data.createdAt?.toDate().toLocaleString() || 'Саяхан'}</small></div>
+                        <span class="status-badge" style="background:${color}">${data.status}</span>
                     </div>
-                    <div style="margin: 5px 0;">📍 <strong>Хаяг:</strong> ${data.address || 'Тодорхойгүй'}</div>
-                    <div style="margin: 5px 0;">📞 <strong>Утас:</strong> <a href="tel:${data.userPhone}">${data.userPhone || '---'}</a></div>
+                    <div>📍 ${data.address} | 📞 ${data.userPhone}</div>
                     <div class="items-list">${itemsHtml}</div>
-                    <div style="text-align:right; font-weight:bold; font-size:18px; color:#2c3e50;">${(data.totalPrice || 0).toLocaleString()}₮</div>
-                    
-                    ${!isDelivered && !isCancelled ? `
-                        <div class="controls">
-                            <button class="btn-cancel" onclick="updateStatus('${doc.id}', 'Цуцлагдсан')">Цуцлах</button>
-                            <button class="btn-ready" onclick="updateStatus('${doc.id}', 'Хүргэгдсэн')">Хүргэсэн</button>
-                        </div>
-                    ` : ''}
+                    <div style="text-align:right; font-size:18px;"><strong>${data.totalPrice.toLocaleString()}₮</strong></div>
+                    <div class="controls"><small>Төлөв шинэчлэх:</small>${selectHtml}</div>
                 `;
                 list.appendChild(card);
             });
-        }, (error) => {
-            console.error("Firestore Error:", error);
-            if(error.code === 'permission-denied') {
-                document.getElementById('admin-orders-list').innerHTML = 
-                    `<p style="color:red; text-align:center;">Эрх хүрэлцэхгүй байна. Firebase Rules-ээ шалгана уу.</p>`;
-            }
         });
     }
 
     function updateStatus(id, newStatus) {
         db.collection("orders").doc(id).update({ status: newStatus })
-          .then(() => {
-              console.log("Status updated to: " + newStatus);
-          })
-          .catch(e => alert("Алдаа: " + e.message));
+            .catch(e => Swal.fire("Алдаа", e.message, "error"));
     }
 </script>
 </body>
