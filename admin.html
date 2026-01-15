@@ -6,41 +6,72 @@
     <title>Joy Mouth - Admin Panel</title>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
     <style>
         :root { --primary: #2ecc71; --bg: #f4f7f6; }
         body { font-family: 'Inter', sans-serif; margin: 0; background: var(--bg); display: flex; height: 100vh; }
-        .sidebar { width: 280px; background: white; border-right: 1px solid #e2e8f0; padding: 30px; display: flex; flex-direction: column; }
+        
+        /* Sidebar Layout */
+        .sidebar { width: 280px; background: white; border-right: 1px solid #e2e8f0; padding: 30px; display: flex; flex-direction: column; flex-shrink: 0; }
         .main { flex: 1; padding: 40px; overflow-y: auto; }
-        .orders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 25px; }
-        .order-card { background: white; border-radius: 24px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.03); border-top: 6px solid #cbd5e1; }
-        .status-badge { padding: 5px 14px; border-radius: 20px; font-size: 11px; font-weight: 800; text-transform: uppercase; }
-        .order-items { background: #f8fafc; padding: 15px; border-radius: 12px; list-style: none; margin: 15px 0; padding-left: 0; }
-        .order-items li { display: flex; justify-content: space-between; padding: 5px 0; font-size: 14px; border-bottom: 1px dashed #e2e8f0; }
-        .status-select { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; background: white; font-weight: 600; cursor: pointer; }
+        
+        /* Grid System */
+        .orders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; }
+        
+        /* Card Style */
+        .order-card { 
+            background: white; border-radius: 20px; padding: 20px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-top: 6px solid #cbd5e1; 
+            display: flex; flex-direction: column; transition: 0.3s;
+        }
+        .order-card:hover { transform: translateY(-5px); }
+
+        .status-badge { padding: 6px 12px; border-radius: 20px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+        
+        .order-items { background: #f8fafc; padding: 15px; border-radius: 12px; list-style: none; margin: 15px 0; padding-left: 0; flex-grow: 1; }
+        .order-items li { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; border-bottom: 1px dashed #e2e8f0; }
+        .order-items li:last-child { border-bottom: none; }
+
+        .status-select { 
+            width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; 
+            background: #fff; font-weight: 600; cursor: pointer; font-family: inherit;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            body { flex-direction: column; height: auto; overflow: auto; }
+            .sidebar { width: 100%; height: auto; padding: 20px; border-right: none; border-bottom: 1px solid #e2e8f0; box-sizing: border-box; }
+            .main { padding: 20px; }
+            .orders-grid { grid-template-columns: 1fr; }
+        }
+
+        /* Auth Screen */
         #auth-screen { position: fixed; inset: 0; background: #f1f5f9; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
-        .login-btn { padding: 15px 35px; background: #4285F4; color: white; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; }
+        .login-btn { padding: 15px 35px; background: #4285F4; color: white; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; font-size: 16px; }
     </style>
 </head>
 <body>
     <div id="auth-screen">
-        <h1 style="font-weight: 800; margin-bottom: 20px;">Joy Mouth Admin 👨‍🍳</h1>
+        <h1 style="font-weight: 800; margin-bottom: 20px; font-size: 32px;">Joy Mouth Admin 👨‍🍳</h1>
         <button class="login-btn" onclick="login()">Google-ээр нэвтрэх</button>
     </div>
 
-    <div id="admin-layout" style="display:none; width: 100%; display: flex;">
+    <div id="admin-layout" style="display:none; width: 100%;">
         <div class="sidebar">
-            <h2 style="font-weight: 800;">👨‍🍳 Admin</h2>
-            <div style="background: #f1f5f9; padding: 25px; border-radius: 20px; margin-top: 20px;">
+            <h2 style="font-weight: 800; font-size: 24px;">👨‍🍳 Admin Panel</h2>
+            <div style="background: #f1f5f9; padding: 20px; border-radius: 15px; margin-top: 10px;">
                 <small style="color: #64748b; font-weight: 800;">НИЙТ ЗАХИАЛГА</small>
-                <div id="total-orders" style="font-size: 36px; font-weight: 800; color: var(--primary);">0</div>
+                <div id="total-orders" style="font-size: 32px; font-weight: 800; color: var(--primary);">0</div>
             </div>
-            <button onclick="logout()" style="margin-top: auto; padding: 15px; border: none; background: #fee2e2; color: #ef4444; border-radius: 12px; font-weight: 800; cursor: pointer;">🚪 Гарах</button>
+            <button onclick="logout()" style="margin-top: 30px; padding: 15px; border: none; background: #fee2e2; color: #ef4444; border-radius: 12px; font-weight: 800; cursor: pointer;">🚪 Системээс гарах</button>
         </div>
+        
         <div class="main">
-            <h1 style="font-weight: 800; margin-bottom: 30px;">Захиалгын хяналт</h1>
+            <h1 style="font-weight: 800; margin-bottom: 25px;">Захиалгын хяналт</h1>
             <div class="orders-grid" id="orders-container"></div>
         </div>
     </div>
@@ -67,6 +98,7 @@
             if (user) loadOrders();
         });
 
+        // Төлөвт тохирсон өнгө авах
         function getStyle(status) {
             switch(status) {
                 case "Шинэ": return { bg: "#fff3e0", text: "#ef6c00", border: "#f39c12" };
@@ -79,24 +111,40 @@
             }
         }
 
+        // Захиалгуудыг Real-time ачаалах
         function loadOrders() {
             db.collection("orders").orderBy("createdAt", "desc").onSnapshot(snapshot => {
                 const container = document.getElementById('orders-container');
                 document.getElementById('total-orders').innerText = snapshot.size;
                 container.innerHTML = "";
+                
                 snapshot.forEach(doc => {
                     const data = doc.data();
                     const style = getStyle(data.status);
+                    const time = data.createdAt ? data.createdAt.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '--:--';
+                    
                     let itemsHtml = Object.entries(data.items).map(([n, q]) => `<li><span>${n}</span> <strong>x${q}</strong></li>`).join('');
+                    
                     container.innerHTML += `
                         <div class="order-card" style="border-top-color: ${style.border}">
-                            <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
-                                <h3 style="margin:0;">${data.userName}</h3>
+                            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+                                <div>
+                                    <h3 style="margin:0; font-size:18px;">${data.userName}</h3>
+                                    <small style="color:#64748b;">🕒 ${time}</small>
+                                </div>
                                 <span class="status-badge" style="background:${style.bg}; color:${style.text}; border:1px solid ${style.border}40;">${data.status}</span>
                             </div>
-                            <div style="font-size:13px; color:#64748b; line-height:1.6;">📍 ${data.address} <br> 📞 ${data.userPhone}</div>
+                            
+                            <div style="font-size:13px; color:#475569; background:#fff; padding:8px 0; border-radius:8px;">
+                                📍 ${data.address} <br> 📞 <a href="tel:${data.userPhone}" style="color:var(--primary); text-decoration:none; font-weight:bold;">${data.userPhone}</a>
+                            </div>
+
                             <ul class="order-items">${itemsHtml}</ul>
-                            <div style="text-align:right; font-size:24px; font-weight:800; margin-bottom:20px;">${data.totalPrice.toLocaleString()}₮</div>
+                            
+                            <div style="text-align:right; font-size:22px; font-weight:800; margin-bottom:15px; color:#1e293b;">
+                                ${data.totalPrice.toLocaleString()}₮
+                            </div>
+
                             <select class="status-select" onchange="updateStatus('${doc.id}', this.value)">
                                 <option value="Шинэ" ${data.status==='Шинэ'?'selected':''}>Шинэ</option>
                                 <option value="Төлбөр хүлээгдэж байна" ${data.status==='Төлбөр хүлээгдэж байна'?'selected':''}>Төлбөр хүлээгдэж байна</option>
@@ -110,9 +158,19 @@
             });
         }
 
+        // Төлөв шинэчлэх
         function updateStatus(id, status) {
             db.collection("orders").doc(id).update({ status: status })
-            .then(() => Swal.fire({ title: 'Шинэчлэгдлээ', icon: 'success', timer: 1000, showConfirmButton: false, toast: true, position: 'top-end' }));
+            .then(() => {
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 2000,
+                    timerProgressBar: true
+                });
+                Toast.fire({ icon: 'success', title: 'Төлөв шинэчлэгдлээ' });
+            });
         }
     </script>
 </body>
