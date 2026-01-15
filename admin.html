@@ -23,7 +23,17 @@
     </style>
 </head>
 <body>
-
+// admin.html-ийн <script> дотор нэмэх
+firebase.auth().onAuthStateChanged((user) => {
+    if (user) {
+        console.log("Нэвтэрсэн админ:", user.email);
+        // Хэрэв нэвтэрсэн бол захиалгыг уншиж эхэлнэ
+    } else {
+        // Нэвтрээгүй бол Google-ээр нэвтрэх цонх гаргах
+        const provider = new firebase.auth.GoogleAuthProvider();
+        firebase.auth().signInWithPopup(provider);
+    }
+});
 <div class="admin-container">
     <div class="header">
         <h2>👨‍🍳 Joy Mouth Admin</h2>
@@ -122,4 +132,5 @@
     }
 </script>
 </body>
+
 </html>
