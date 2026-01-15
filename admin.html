@@ -6,57 +6,40 @@
     <title>Joy Mouth - Admin Panel</title>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-    
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-
     <style>
         :root { --primary: #2ecc71; --bg: #f4f7f6; }
         body { font-family: 'Inter', sans-serif; margin: 0; background: var(--bg); display: flex; height: 100vh; }
-        
-        /* Layout */
         .sidebar { width: 280px; background: white; border-right: 1px solid #e2e8f0; padding: 30px; display: flex; flex-direction: column; }
         .main { flex: 1; padding: 40px; overflow-y: auto; }
-        
-        /* Orders Grid */
         .orders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 25px; }
         .order-card { background: white; border-radius: 20px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-top: 6px solid #cbd5e1; }
-        
         .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; text-transform: uppercase; }
         .order-items { background: #f8fafc; padding: 15px; border-radius: 12px; list-style: none; margin: 15px 0; padding-left: 0; }
         .order-items li { display: flex; justify-content: space-between; padding: 4px 0; font-size: 14px; }
-        
         .status-select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0; background: white; font-weight: 600; cursor: pointer; }
-        
-        /* Auth Screen */
         #auth-screen { position: fixed; inset: 0; background: #f1f5f9; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
         .login-btn { padding: 15px 35px; background: #4285F4; color: white; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; }
     </style>
 </head>
 <body>
-
-    <div id="auth-screen">
-        <h1 style="font-weight: 800; margin-bottom: 20px;">Joy Mouth Admin 👨‍🍳</h1>
-        <button class="login-btn" onclick="login()">Google-ээр нэвтрэх</button>
-    </div>
-
+    <div id="auth-screen"><button class="login-btn" onclick="login()">Google-ээр нэвтрэх</button></div>
     <div id="admin-layout" style="display:none; width: 100%; display: flex;">
         <div class="sidebar">
             <h2 style="font-weight: 800;">👨‍🍳 Admin</h2>
             <div style="background: #f1f5f9; padding: 20px; border-radius: 15px; margin-top: 20px;">
-                <small style="color: #64748b; font-weight: 600;">НИЙТ ЗАХИАЛГА</small>
+                <small>НИЙТ ЗАХИАЛГА</small>
                 <div id="total-orders" style="font-size: 32px; font-weight: 800; color: var(--primary);">0</div>
             </div>
-            <button onclick="logout()" style="margin-top: auto; padding: 12px; border: none; background: #fee2e2; color: #ef4444; border-radius: 10px; font-weight: 800; cursor: pointer;">🚪 Гарах</button>
+            <button onclick="logout()" style="margin-top:auto; padding:10px; cursor:pointer;">🚪 Гарах</button>
         </div>
-
         <div class="main">
             <h1 style="font-weight: 800; margin-bottom: 30px;">Захиалгын хяналт</h1>
             <div class="orders-grid" id="orders-container"></div>
         </div>
     </div>
-
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyDpVh6TB0eVPHhoXjDHfxJuMjnkYnvlwRM",
@@ -66,8 +49,7 @@
             messagingSenderId: "716037708846",
             appId: "1:716037708846:web:22691690cb8f214cfb13bf"
         };
-
-        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
 
@@ -75,24 +57,19 @@
         function logout() { auth.signOut(); }
 
         auth.onAuthStateChanged(user => {
-            const authScreen = document.getElementById('auth-screen');
-            const adminLayout = document.getElementById('admin-layout');
-            
-            if (user) {
-                authScreen.style.display = 'none';
-                adminLayout.style.display = 'flex';
-                loadOrders();
-            } else {
-                authScreen.style.display = 'flex';
-                adminLayout.style.display = 'none';
-            }
+            document.getElementById('auth-screen').style.display = user ? 'none' : 'flex';
+            document.getElementById('admin-layout').style.display = user ? 'flex' : 'none';
+            if (user) loadOrders();
         });
 
-        function getStatusColor(status) {
+        function getStatusStyle(status) {
             switch(status) {
                 case "Шинэ": return { bg: "#fff3e0", text: "#ef6c00", border: "#f39c12" };
                 case "Төлбөр хүлээгдэж байна": return { bg: "#e0f2fe", text: "#0369a1", border: "#3498db" };
+                case "Бэлтгэгдэж байна": return { bg: "#f3e5f5", text: "#7b1fa2", border: "#9b59b6" };
+                case "Хүргэлтэнд гарсан": return { bg: "#fff3e0", text: "#e65100", border: "#e67e22" };
                 case "Хүргэгдсэн": return { bg: "#f0fdf4", text: "#15803d", border: "#2ecc71" };
+                case "Цуцлагдсан": return { bg: "#ffebee", text: "#c62828", border: "#e74c3c" };
                 default: return { bg: "#f1f5f9", text: "#475569", border: "#cbd5e1" };
             }
         }
@@ -102,33 +79,24 @@
                 const container = document.getElementById('orders-container');
                 document.getElementById('total-orders').innerText = snapshot.size;
                 container.innerHTML = "";
-
                 snapshot.forEach(doc => {
                     const data = doc.data();
-                    const style = getStatusColor(data.status);
-                    const time = data.createdAt ? data.createdAt.toDate().toLocaleString() : "Саяхан";
-                    
-                    let itemsHtml = "";
-                    for (const [name, qty] of Object.entries(data.items)) {
-                        itemsHtml += `<li><span>${name}</span> <strong>x${qty}</strong></li>`;
-                    }
-
+                    const style = getStatusStyle(data.status);
+                    let itemsHtml = Object.entries(data.items).map(([n, q]) => `<li><span>${n}</span> <strong>x${q}</strong></li>`).join('');
                     container.innerHTML += `
                         <div class="order-card" style="border-top-color: ${style.border}">
                             <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
                                 <h3 style="margin:0;">${data.userName}</h3>
                                 <span class="status-badge" style="background:${style.bg}; color:${style.text};">${data.status}</span>
                             </div>
-                            <div style="font-size:13px; color:#64748b;">
-                                📍 ${data.address} <br> 📞 ${data.userPhone} <br> 🕒 ${time}
-                            </div>
+                            <div style="font-size:13px;">📍 ${data.address} <br> 📞 ${data.userPhone}</div>
                             <ul class="order-items">${itemsHtml}</ul>
-                            <div style="text-align:right; font-size:22px; font-weight:800; margin-bottom:15px;">
-                                ${data.totalPrice.toLocaleString()}₮
-                            </div>
+                            <div style="text-align:right; font-size:22px; font-weight:800; margin-bottom:15px;">${data.totalPrice.toLocaleString()}₮</div>
                             <select class="status-select" onchange="updateStatus('${doc.id}', this.value)">
                                 <option value="Шинэ" ${data.status === 'Шинэ' ? 'selected' : ''}>Шинэ</option>
                                 <option value="Төлбөр хүлээгдэж байна" ${data.status === 'Төлбөр хүлээгдэж байна' ? 'selected' : ''}>Төлбөр хүлээгдэж байна</option>
+                                <option value="Бэлтгэгдэж байна" ${data.status === 'Бэлтгэгдэж байна' ? 'selected' : ''}>Бэлтгэгдэж байна</option>
+                                <option value="Хүргэлтэнд гарсан" ${data.status === 'Хүргэлтэнд гарсан' ? 'selected' : ''}>Хүргэлтэнд гарсан</option>
                                 <option value="Хүргэгдсэн" ${data.status === 'Хүргэгдсэн' ? 'selected' : ''}>Хүргэгдсэн</option>
                                 <option value="Цуцлагдсан" ${data.status === 'Цуцлагдсан' ? 'selected' : ''}>Цуцлагдсан</option>
                             </select>
@@ -139,9 +107,7 @@
 
         function updateStatus(id, status) {
             db.collection("orders").doc(id).update({ status: status })
-            .then(() => {
-                Swal.fire({ title: 'Шинэчлэгдлээ', icon: 'success', timer: 1000, showConfirmButton: false, toast: true, position: 'top-end' });
-            });
+            .then(() => Swal.fire({ title: 'Шинэчлэгдлээ', icon: 'success', timer: 1000, showConfirmButton: false, toast: true, position: 'top-end' }));
         }
     </script>
 </body>
