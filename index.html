@@ -3,60 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Joy Mouth - Digital Menu</title>
+    <title>Joy Mouth - Digital Menu POS</title>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-body: #f4f7f6;
+            --bg-body: #f1f3f6;
             --sidebar-bg: #ffffff;
             --primary-color: #2ecc71;
-            --text-dark: #2d3436;
+            --text-dark: #1e272e;
+            --accent-red: #eb4d4b;
         }
 
         body {
             font-family: 'Inter', sans-serif;
             margin: 0;
+            padding: 0;
+            background-color: var(--bg-body);
             display: flex;
             height: 100vh;
-            background-color: var(--bg-body);
-            overflow: hidden;
+            overflow: hidden; /* Бүтэн дэлгэцийг тогтмол болгоно */
         }
 
-        /* 1. Зүүн талын цэс (Sidebar) */
+        /* 1. Sidebar (Зүүн тал) */
         .sidebar {
             width: 240px;
+            min-width: 240px;
             background: var(--sidebar-bg);
-            border-right: 1px solid #eee;
+            border-right: 1px solid #e0e6ed;
             display: flex;
             flex-direction: column;
-            padding: 20px 0;
+            padding: 25px 0;
+            z-index: 10;
         }
 
         .logo {
-            padding: 0 25px 20px;
-            font-size: 22px;
+            font-size: 24px;
             font-weight: 800;
             color: var(--text-dark);
-            border-bottom: 1px solid #f9f9f9;
-        }
-
-        .menu-nav {
-            flex: 1;
-            padding: 20px 15px;
-        }
-
-        .nav-item {
-            padding: 12px 15px;
-            margin-bottom: 5px;
-            border-radius: 10px;
-            cursor: pointer;
-            color: #636e72;
-            font-weight: 600;
-            transition: 0.2s;
+            padding: 0 30px 30px;
             display: flex;
             align-items: center;
             gap: 10px;
+        }
+
+        .nav-menu {
+            flex: 1;
+            padding: 0 15px;
+        }
+
+        .nav-item {
+            padding: 14px 20px;
+            margin-bottom: 8px;
+            border-radius: 12px;
+            cursor: pointer;
+            color: #7f8c8d;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
         .nav-item:hover, .nav-item.active {
@@ -64,191 +70,283 @@
             color: var(--primary-color);
         }
 
-        /* 2. Гол хэсэг (Product Grid) */
-        .main-content {
+        .nav-item.logout {
+            margin-top: auto;
+            color: var(--accent-red);
+        }
+
+        /* 2. Main Content (Гол хэсэг) */
+        .main-wrapper {
             flex: 1;
+            display: flex;
+            flex-direction: column;
             overflow-y: auto;
-            padding: 30px;
+            padding: 40px;
+            background: #f8fafc;
+        }
+
+        .search-container {
+            margin-bottom: 35px;
         }
 
         .search-bar {
             width: 100%;
-            max-width: 400px;
-            padding: 12px 20px;
-            border-radius: 10px;
-            border: 1px solid #ddd;
-            margin-bottom: 30px;
-            font-size: 14px;
+            max-width: 500px;
+            padding: 15px 25px;
+            border-radius: 15px;
+            border: 1px solid #e2e8f0;
+            font-size: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+            outline: none;
         }
 
+        .section-title {
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 25px;
+            color: var(--text-dark);
+        }
+
+        /* Product Grid - 27 инч дээр маш томоор харагдана */
         .grid-container {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            gap: 25px;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 30px;
+            margin-bottom: 50px;
         }
 
         .product-card {
             background: white;
-            border-radius: 15px;
-            padding: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-            transition: transform 0.2s;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.03);
+            transition: 0.3s;
             position: relative;
         }
 
-        .product-card:hover { transform: translateY(-5px); }
+        .product-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.08);
+        }
 
         .product-img {
             width: 100%;
-            height: 150px;
+            height: 200px;
             object-fit: cover;
-            border-radius: 12px;
-            margin-bottom: 12px;
+            border-radius: 15px;
+            margin-bottom: 15px;
         }
 
-        .product-info h3 { margin: 0; font-size: 16px; color: var(--text-dark); }
-        .product-info p { margin: 5px 0; font-size: 14px; font-weight: 800; color: #2d3436; }
+        .product-info h3 {
+            margin: 0;
+            font-size: 18px;
+            color: var(--text-dark);
+        }
+
+        .product-info p {
+            margin: 8px 0 0;
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--primary-color);
+        }
 
         .add-btn {
             position: absolute;
-            bottom: 15px;
-            right: 15px;
+            bottom: 20px;
+            right: 20px;
             background: var(--primary-color);
             color: white;
             border: none;
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
             cursor: pointer;
-            font-size: 20px;
-            font-weight: bold;
+            font-size: 24px;
+            box-shadow: 0 4px 10px rgba(46, 204, 113, 0.3);
         }
 
-        /* 3. Баруун талын сагс (Right Sidebar) */
+        /* 3. Cart Sidebar (Баруун тал) */
         .cart-sidebar {
-            width: 350px;
+            width: 400px;
+            min-width: 400px;
             background: white;
-            border-left: 1px solid #eee;
+            border-left: 1px solid #e0e6ed;
             display: flex;
             flex-direction: column;
-            padding: 25px;
+            padding: 30px;
+            z-index: 10;
         }
 
-        .cart-header {
+        .cart-title {
+            font-size: 20px;
             font-weight: 800;
-            font-size: 18px;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             display: flex;
             justify-content: space-between;
         }
 
         #cart-items {
             flex: 1;
+            overflow-y: auto;
+            margin-bottom: 25px;
             list-style: none;
             padding: 0;
-            overflow-y: auto;
         }
 
         .cart-item {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #f1f1f1;
+            gap: 15px;
+            padding: 15px 0;
+            border-bottom: 1px solid #f8fafc;
         }
 
-        .order-inputs { margin-top: 20px; }
-        .order-inputs input {
+        .cart-item img {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            object-fit: cover;
+        }
+
+        .cart-item-info { flex: 1; }
+        .cart-item-info strong { display: block; font-size: 14px; }
+        .cart-item-info small { color: #94a3b8; }
+
+        .qty-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Order Form */
+        .order-form {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 15px;
+        }
+
+        .order-form input {
             width: 100%;
-            padding: 12px;
-            margin-bottom: 10px;
-            border-radius: 8px;
-            border: 1px solid #eee;
+            padding: 12px 15px;
+            margin-bottom: 12px;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
             box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 22px;
+            font-weight: 800;
+            margin-bottom: 20px;
+            color: var(--text-dark);
         }
 
         .checkout-btn {
+            width: 100%;
+            padding: 18px;
             background: var(--primary-color);
             color: white;
             border: none;
-            width: 100%;
-            padding: 15px;
-            border-radius: 12px;
-            font-weight: 800;
+            border-radius: 15px;
             font-size: 16px;
+            font-weight: 800;
             cursor: pointer;
-            margin-top: 15px;
+            box-shadow: 0 10px 20px rgba(46, 204, 113, 0.2);
+            transition: 0.3s;
         }
 
+        .checkout-btn:hover { background: #27ae60; }
+
+        /* Login Screen */
         #login-screen {
             position: fixed;
             inset: 0;
             background: white;
             display: flex;
             flex-direction: column;
-            align-items: center;
             justify-content: center;
+            align-items: center;
             z-index: 1000;
         }
 
-        .google-btn {
-            padding: 15px 30px;
-            background: #4285F4;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
+        /* History List Minimal */
+        .history-card {
+            background: white;
+            padding: 15px 25px;
+            border-radius: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        }
+
+        /* Мэдрэгчтэй төхөөрөмжид зориулсан */
+        @media (max-width: 1024px) {
+            .sidebar { display: none; }
+            .cart-sidebar { width: 320px; min-width: 320px; }
         }
     </style>
 </head>
 <body>
 
     <div id="login-screen">
-        <h1 style="font-weight: 800; font-size: 40px; margin-bottom: 30px;">Joy Mouth 👨‍🍳</h1>
-        <button class="google-btn" onclick="signInWithGoogle()">Google-ээр нэвтрэх</button>
+        <h1 style="font-size: 48px; font-weight: 800; margin-bottom: 10px;">Joy Mouth 👨‍🍳</h1>
+        <p style="color: #64748b; margin-bottom: 40px;">Тавтай морилно уу, захиалгаа эхлүүлнэ үү.</p>
+        <button onclick="signInWithGoogle()" style="padding: 15px 40px; background: #4285F4; color: white; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 10px;">
+            <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" width="20"> Google-ээр нэвтрэх
+        </button>
     </div>
 
     <div id="main-content" style="display:none; width: 100%; display: flex;">
         <div class="sidebar">
-            <div class="logo">Joy Mouth</div>
-            <div class="menu-nav">
+            <div class="logo">👨‍🍳 Joy Mouth</div>
+            <div class="nav-menu">
                 <div class="nav-item active">🏠 Бүх хоол</div>
                 <div class="nav-item">🍔 Бүргер</div>
                 <div class="nav-item">🥪 Сэндвич</div>
-                <div class="nav-item">🍱 Кимбаб</div>
-                <div id="user-info" style="margin-top: 30px; font-size: 12px; color: #aaa; padding-left: 15px;"></div>
-                <div class="nav-item" onclick="logout()" style="color: #e74c3c;">🚪 Гарах</div>
+                <div class="nav-item" id="user-display" style="margin-top: 40px; font-size: 13px; color: #94a3b8;"></div>
+                <div class="nav-item logout" onclick="logout()">🚪 Гарах</div>
             </div>
         </div>
 
-        <div class="main-content">
-            <input type="text" class="search-bar" placeholder="Хоол хайх...">
-            <h2 style="font-weight: 800;">👨‍🍳 Цэс</h2>
+        <div class="main-wrapper">
+            <div class="search-container">
+                <input type="text" class="search-bar" placeholder="Хоолны нэрээр хайх...">
+            </div>
+
+            <h2 class="section-title">👨‍🍳 Үндсэн цэс</h2>
             <div class="grid-container" id="product-grid">
                 </div>
 
-            <h2 style="font-weight: 800; margin-top: 50px;">📜 Захиалгын түүх</h2>
-            <div id="history-list"></div>
+            <h2 class="section-title" style="margin-top: 40px;">📜 Сүүлийн захиалгууд</h2>
+            <div id="history-list">
+                </div>
         </div>
 
         <div class="cart-sidebar">
-            <div class="cart-header">
-                <span>Миний сагс</span>
-                <span id="item-count" style="color: var(--primary-color);">0</span>
+            <div class="cart-title">
+                Миний сагс
+                <span id="cart-count-badge" style="background: #f0fff4; color: #2ecc71; padding: 2px 10px; border-radius: 8px; font-size: 14px;">0</span>
             </div>
+
             <ul id="cart-items">
                 </ul>
-            
-            <div class="order-inputs">
-                <div style="display: flex; justify-content: space-between; font-weight: 800; margin-bottom: 15px; font-size: 20px;">
+
+            <div class="order-form">
+                <div class="total-row">
                     <span>Нийт:</span>
                     <span><span id="total-price">0</span>₮</span>
                 </div>
-                <input type="text" id="office" placeholder="📍 Хаяг (Жишээ: 4-р давхар 401)">
-                <input type="number" id="phone" placeholder="📞 Утасны дугаар">
-                <button class="checkout-btn" onclick="sendOrder()">Захиалга баталгаажуулах</button>
+                
+                <p style="font-size: 12px; color: #94a3b8; margin-bottom: 10px;">📍 ХҮРГЭЛТИЙН МЭДЭЭЛЭЛ</p>
+                <input type="text" id="office" placeholder="Хаяг (ж-нь: 4-р давхар 402)">
+                <input type="number" id="phone" placeholder="Утасны дугаар">
+                
+                <button class="checkout-btn" onclick="sendOrder()">ЗАХИАЛГА ИЛГЭЭХ</button>
             </div>
         </div>
     </div>
@@ -259,7 +357,7 @@
     <script src="script.js"></script>
 
     <script>
-        // Бүтээгдэхүүний жагсаалтыг дэлгэцэнд гаргах нэмэлт хэсэг
+        // Бүтээгдэхүүний дата (Зурагтай)
         const products = [
             { name: "Бүргер", price: 7000, icon: "🍔", img: "burger_real.jpg" },
             { name: "Сэндвич", price: 6500, icon: "🥪", img: "sandwich_real.jpg" },
@@ -271,7 +369,7 @@
             const grid = document.getElementById('product-grid');
             grid.innerHTML = products.map(p => `
                 <div class="product-card">
-                    <img src="${p.img}" class="product-img" onerror="this.src='https://via.placeholder.com/200x150?text=Food'">
+                    <img src="${p.img}" class="product-img" onerror="this.src='https://via.placeholder.com/300x200?text=${p.name}'">
                     <div class="product-info">
                         <h3>${p.name}</h3>
                         <p>${p.price.toLocaleString()}₮</p>
@@ -280,7 +378,15 @@
                 </div>
             `).join('');
         }
-        renderProducts();
+        
+        // Нэвтэрсэн хэрэглэгчийн нэрийг харуулах
+        firebase.auth().onAuthStateChanged((user) => {
+            if (user) {
+                document.getElementById('user-display').innerText = "👤 " + user.displayName;
+                document.getElementById('main-content').style.display = 'flex';
+                renderProducts();
+            }
+        });
     </script>
 </body>
 </html>
