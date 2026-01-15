@@ -23,17 +23,7 @@
     </style>
 </head>
 <body>
-// admin.html-ийн <script> дотор нэмэх
-firebase.auth().onAuthStateChanged((user) => {
-    if (user) {
-        console.log("Нэвтэрсэн админ:", user.email);
-        // Хэрэв нэвтэрсэн бол захиалгыг уншиж эхэлнэ
-    } else {
-        // Нэвтрээгүй бол Google-ээр нэвтрэх цонх гаргах
-        const provider = new firebase.auth.GoogleAuthProvider();
-        firebase.auth().signInWithPopup(provider);
-    }
-});
+
 <div class="admin-container">
     <div class="header">
         <h2>👨‍🍳 Joy Mouth Admin</h2>
@@ -48,7 +38,7 @@ firebase.auth().onAuthStateChanged((user) => {
 <audio id="notif-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
 
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script> <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
 <script>
     const firebaseConfig = {
@@ -66,62 +56,82 @@ firebase.auth().onAuthStateChanged((user) => {
     const sound = document.getElementById('notif-sound');
     let lastOrderCount = -1;
 
-    // ЗАХИАЛГУУДЫГ БОДИТ ЦАГТ ХЯНАХ
-    db.collection("orders").orderBy("createdAt", "desc").limit(20).onSnapshot((snapshot) => {
-        const list = document.getElementById('admin-orders-list');
-        const stats = document.getElementById('stats');
-        list.innerHTML = "";
-        
-        // Шинэ захиалга ирснийг шалгаж дуу гаргах
-        if (lastOrderCount !== -1 && snapshot.size > lastOrderCount) {
-            sound.play().catch(e => console.log("Дуу тоглуулахад алдаа:", e));
+    // НЭВТРЭХ ХЭСЭГ (Auth)
+    firebase.auth().onAuthStateChanged((user) => {
+        if (user) {
+            console.log("Нэвтэрсэн админ:", user.email);
+            startListeningOrders(); // Нэвтэрсэн бол захиалга уншиж эхэлнэ
+        } else {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            firebase.auth().signInWithPopup(provider).catch(err => {
+                alert("Нэвтрэхэд алдаа гарлаа: " + err.message);
+            });
         }
-        lastOrderCount = snapshot.size;
-        stats.innerText = `Нийт: ${snapshot.size} захиалга`;
+    });
 
-        if (snapshot.empty) {
-            list.innerHTML = "<p style='text-align:center; padding:50px;'>Одоогоор захиалга байхгүй байна.</p>";
-            return;
-        }
-
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            const date = data.createdAt ? data.createdAt.toDate().toLocaleString() : "Саяхан";
-            const isDelivered = data.status === "Хүргэгдсэн";
-            const isCancelled = data.status === "Цуцлагдсан";
+    function startListeningOrders() {
+        // ЗАХИАЛГУУДЫГ БОДИТ ЦАГТ ХЯНАХ
+        db.collection("orders").orderBy("createdAt", "desc").limit(20).onSnapshot((snapshot) => {
+            const list = document.getElementById('admin-orders-list');
+            const stats = document.getElementById('stats');
+            list.innerHTML = "";
             
-            let itemsHtml = "";
-            for (const [name, count] of Object.entries(data.items)) {
-                itemsHtml += `<div>• ${name} <span style="float:right">x${count}</span></div>`;
+            if (lastOrderCount !== -1 && snapshot.size > lastOrderCount) {
+                sound.play().catch(e => console.log("Дуу тоглуулахад алдаа:", e));
+            }
+            lastOrderCount = snapshot.size;
+            stats.innerText = `Нийт: ${snapshot.size} захиалга`;
+
+            if (snapshot.empty) {
+                list.innerHTML = "<p style='text-align:center; padding:50px;'>Одоогоор захиалга байхгүй байна.</p>";
+                return;
             }
 
-            const statusColor = data.status === "Шинэ" ? "#f39c12" : (isDelivered ? "#2ecc71" : "#e74c3c");
-
-            const card = document.createElement('div');
-            card.className = `order-card ${isDelivered ? 'delivered' : ''} ${isCancelled ? 'cancelled' : ''}`;
-            card.innerHTML = `
-                <div class="order-header">
-                    <div>
-                        <strong>${data.userName}</strong> <br>
-                        <small style="color:#888;">${date}</small>
-                    </div>
-                    <span class="status-badge" style="background:${statusColor}">${data.status}</span>
-                </div>
-                <div style="margin: 5px 0;">📍 <strong>Хаяг:</strong> ${data.address}</div>
-                <div style="margin: 5px 0;">📞 <strong>Утас:</strong> <a href="tel:${data.userPhone}">${data.userPhone}</a></div>
-                <div class="items-list">${itemsHtml}</div>
-                <div style="text-align:right; font-weight:bold; font-size:18px; color:#2c3e50;">${data.totalPrice.toLocaleString()}₮</div>
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                const date = data.createdAt ? data.createdAt.toDate().toLocaleString() : "Саяхан";
+                const isDelivered = data.status === "Хүргэгдсэн";
+                const isCancelled = data.status === "Цуцлагдсан";
                 
-                ${!isDelivered && !isCancelled ? `
-                    <div class="controls">
-                        <button class="btn-cancel" onclick="updateStatus('${doc.id}', 'Цуцлагдсан')">Цуцлах</button>
-                        <button class="btn-ready" onclick="updateStatus('${doc.id}', 'Хүргэгдсэн')">Хүргэсэн</button>
+                let itemsHtml = "";
+                for (const [name, count] of Object.entries(data.items)) {
+                    itemsHtml += `<div>• ${name} <span style="float:right">x${count}</span></div>`;
+                }
+
+                const statusColor = data.status === "Шинэ" ? "#f39c12" : (isDelivered ? "#2ecc71" : "#e74c3c");
+
+                const card = document.createElement('div');
+                card.className = `order-card ${isDelivered ? 'delivered' : ''} ${isCancelled ? 'cancelled' : ''}`;
+                card.innerHTML = `
+                    <div class="order-header">
+                        <div>
+                            <strong>${data.userName || 'Нэргүй'}</strong> <br>
+                            <small style="color:#888;">${date}</small>
+                        </div>
+                        <span class="status-badge" style="background:${statusColor}">${data.status}</span>
                     </div>
-                ` : ''}
-            `;
-            list.appendChild(card);
+                    <div style="margin: 5px 0;">📍 <strong>Хаяг:</strong> ${data.address || 'Тодорхойгүй'}</div>
+                    <div style="margin: 5px 0;">📞 <strong>Утас:</strong> <a href="tel:${data.userPhone}">${data.userPhone || '---'}</a></div>
+                    <div class="items-list">${itemsHtml}</div>
+                    <div style="text-align:right; font-weight:bold; font-size:18px; color:#2c3e50;">${(data.totalPrice || 0).toLocaleString()}₮</div>
+                    
+                    ${!isDelivered && !isCancelled ? `
+                        <div class="controls">
+                            <button class="btn-cancel" onclick="updateStatus('${doc.id}', 'Цуцлагдсан')">Цуцлах</button>
+                            <button class="btn-ready" onclick="updateStatus('${doc.id}', 'Хүргэгдсэн')">Хүргэсэн</button>
+                        </div>
+                    ` : ''}
+                `;
+                list.appendChild(card);
+            });
+        }, (error) => {
+            console.error("Firestore Error:", error);
+            if(error.code === 'permission-denied') {
+                document.getElementById('admin-orders-list').innerHTML = 
+                    `<p style="color:red; text-align:center;">Эрх хүрэлцэхгүй байна. Firebase Rules-ээ шалгана уу.</p>`;
+            }
         });
-    });
+    }
 
     function updateStatus(id, newStatus) {
         db.collection("orders").doc(id).update({ status: newStatus })
@@ -132,5 +142,4 @@ firebase.auth().onAuthStateChanged((user) => {
     }
 </script>
 </body>
-
 </html>
