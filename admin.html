@@ -14,12 +14,12 @@
         body { font-family: 'Inter', sans-serif; margin: 0; background: var(--bg); display: flex; height: 100vh; }
         .sidebar { width: 280px; background: white; border-right: 1px solid #e2e8f0; padding: 30px; display: flex; flex-direction: column; }
         .main { flex: 1; padding: 40px; overflow-y: auto; }
-        .orders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 25px; }
-        .order-card { background: white; border-radius: 20px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-top: 6px solid #cbd5e1; }
-        .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+        .orders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 25px; }
+        .order-card { background: white; border-radius: 24px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.03); border-top: 6px solid #cbd5e1; }
+        .status-badge { padding: 5px 14px; border-radius: 20px; font-size: 11px; font-weight: 800; text-transform: uppercase; }
         .order-items { background: #f8fafc; padding: 15px; border-radius: 12px; list-style: none; margin: 15px 0; padding-left: 0; }
-        .order-items li { display: flex; justify-content: space-between; padding: 4px 0; font-size: 14px; }
-        .status-select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0; background: white; font-weight: 600; cursor: pointer; }
+        .order-items li { display: flex; justify-content: space-between; padding: 5px 0; font-size: 14px; border-bottom: 1px dashed #e2e8f0; }
+        .status-select { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; background: white; font-weight: 600; cursor: pointer; }
         #auth-screen { position: fixed; inset: 0; background: #f1f5f9; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
         .login-btn { padding: 15px 35px; background: #4285F4; color: white; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; }
     </style>
@@ -33,11 +33,11 @@
     <div id="admin-layout" style="display:none; width: 100%; display: flex;">
         <div class="sidebar">
             <h2 style="font-weight: 800;">👨‍🍳 Admin</h2>
-            <div style="background: #f1f5f9; padding: 20px; border-radius: 15px; margin-top: 20px;">
-                <small style="color: #64748b; font-weight: 600;">НИЙТ ЗАХИАЛГА</small>
-                <div id="total-orders" style="font-size: 32px; font-weight: 800; color: var(--primary);">0</div>
+            <div style="background: #f1f5f9; padding: 25px; border-radius: 20px; margin-top: 20px;">
+                <small style="color: #64748b; font-weight: 800;">НИЙТ ЗАХИАЛГА</small>
+                <div id="total-orders" style="font-size: 36px; font-weight: 800; color: var(--primary);">0</div>
             </div>
-            <button onclick="logout()" style="margin-top: auto; padding: 12px; border: none; background: #fee2e2; color: #ef4444; border-radius: 10px; font-weight: 800; cursor: pointer;">🚪 Гарах</button>
+            <button onclick="logout()" style="margin-top: auto; padding: 15px; border: none; background: #fee2e2; color: #ef4444; border-radius: 12px; font-weight: 800; cursor: pointer;">🚪 Гарах</button>
         </div>
         <div class="main">
             <h1 style="font-weight: 800; margin-bottom: 30px;">Захиалгын хяналт</h1>
@@ -92,11 +92,11 @@
                         <div class="order-card" style="border-top-color: ${style.border}">
                             <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
                                 <h3 style="margin:0;">${data.userName}</h3>
-                                <span class="status-badge" style="background:${style.bg}; color:${style.text};">${data.status}</span>
+                                <span class="status-badge" style="background:${style.bg}; color:${style.text}; border:1px solid ${style.border}40;">${data.status}</span>
                             </div>
-                            <div style="font-size:13px; color:#64748b;">📍 ${data.address} <br> 📞 ${data.userPhone}</div>
+                            <div style="font-size:13px; color:#64748b; line-height:1.6;">📍 ${data.address} <br> 📞 ${data.userPhone}</div>
                             <ul class="order-items">${itemsHtml}</ul>
-                            <div style="text-align:right; font-size:22px; font-weight:800; margin-bottom:15px;">${data.totalPrice.toLocaleString()}₮</div>
+                            <div style="text-align:right; font-size:24px; font-weight:800; margin-bottom:20px;">${data.totalPrice.toLocaleString()}₮</div>
                             <select class="status-select" onchange="updateStatus('${doc.id}', this.value)">
                                 <option value="Шинэ" ${data.status==='Шинэ'?'selected':''}>Шинэ</option>
                                 <option value="Төлбөр хүлээгдэж байна" ${data.status==='Төлбөр хүлээгдэж байна'?'selected':''}>Төлбөр хүлээгдэж байна</option>
