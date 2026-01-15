@@ -12,62 +12,52 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
     <style>
-        :root { --primary: #2ecc71; --bg: #f4f7f6; --white: #ffffff; }
-        body { font-family: 'Inter', sans-serif; margin: 0; background-color: var(--bg); display: flex; height: 100vh; overflow: hidden; }
+        :root { --primary: #2ecc71; --bg: #f4f7f6; }
+        body { font-family: 'Inter', sans-serif; margin: 0; background: var(--bg); display: flex; height: 100vh; }
         
-        /* Sidebar */
-        .admin-sidebar { width: 280px; background: var(--white); border-right: 1px solid #e2e8f0; padding: 30px; display: flex; flex-direction: column; }
-        .logo { font-size: 24px; font-weight: 800; margin-bottom: 40px; display: flex; align-items: center; gap: 10px; }
-        .stats-card { background: #f8fafc; padding: 20px; border-radius: 16px; margin-bottom: 20px; border: 1px solid #e2e8f0; }
-        .stats-card small { color: #64748b; font-size: 12px; font-weight: 600; }
-        .stats-card div { font-size: 28px; font-weight: 800; color: var(--primary); }
-
-        /* Main Content */
-        .admin-main { flex: 1; padding: 40px; overflow-y: auto; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        /* Layout */
+        .sidebar { width: 280px; background: white; border-right: 1px solid #e2e8f0; padding: 30px; display: flex; flex-direction: column; }
+        .main { flex: 1; padding: 40px; overflow-y: auto; }
         
-        .orders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 25px; }
-        .order-card { background: white; border-radius: 20px; padding: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border-top: 6px solid #cbd5e1; transition: 0.3s; }
-        .order-card:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        /* Orders Grid */
+        .orders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 25px; }
+        .order-card { background: white; border-radius: 20px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-top: 6px solid #cbd5e1; }
         
-        .status-badge { padding: 6px 14px; border-radius: 99px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
-        .order-items { background: #f1f5f9; padding: 15px; border-radius: 12px; list-style: none; margin: 15px 0; padding-left: 0; }
-        .order-items li { display: flex; justify-content: space-between; padding: 4px 0; font-size: 14px; color: #334155; }
+        .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+        .order-items { background: #f8fafc; padding: 15px; border-radius: 12px; list-style: none; margin: 15px 0; padding-left: 0; }
+        .order-items li { display: flex; justify-content: space-between; padding: 4px 0; font-size: 14px; }
         
-        .status-select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0; background: #fff; font-weight: 600; cursor: pointer; margin-top: 10px; }
+        .status-select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0; background: white; font-weight: 600; cursor: pointer; }
         
-        #login-overlay { position: fixed; inset: 0; background: #f1f5f9; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2000; }
-        .login-btn { padding: 16px 32px; background: #4285F4; color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 16px; }
+        /* Auth Screen */
+        #auth-screen { position: fixed; inset: 0; background: #f1f5f9; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
+        .login-btn { padding: 15px 35px; background: #4285F4; color: white; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div id="login-overlay">
+    <div id="auth-screen">
         <h1 style="font-weight: 800; margin-bottom: 20px;">Joy Mouth Admin 👨‍🍳</h1>
-        <button class="login-btn" onclick="adminLogin()">Google-ээр нэвтрэх</button>
+        <button class="login-btn" onclick="login()">Google-ээр нэвтрэх</button>
     </div>
 
-    <div id="admin-content" style="display:none; width: 100%; display: flex;">
-        <div class="admin-sidebar">
-            <div class="logo">👨‍🍳 Joy Mouth</div>
-            <div class="stats-card">
-                <small>НИЙТ ЗАХИАЛГА</small>
-                <div id="total-count">0</div>
+    <div id="admin-layout" style="display:none; width: 100%; display: flex;">
+        <div class="sidebar">
+            <h2 style="font-weight: 800;">👨‍🍳 Admin</h2>
+            <div style="background: #f1f5f9; padding: 20px; border-radius: 15px; margin-top: 20px;">
+                <small style="color: #64748b; font-weight: 600;">НИЙТ ЗАХИАЛГА</small>
+                <div id="total-orders" style="font-size: 32px; font-weight: 800; color: var(--primary);">0</div>
             </div>
-            <button onclick="logout()" style="margin-top: auto; padding: 12px; border: none; background: #fee2e2; color: #ef4444; border-radius: 10px; font-weight: 700; cursor: pointer;">🚪 Гарах</button>
+            <button onclick="logout()" style="margin-top: auto; padding: 12px; border: none; background: #fee2e2; color: #ef4444; border-radius: 10px; font-weight: 800; cursor: pointer;">🚪 Гарах</button>
         </div>
 
-        <div class="admin-main">
-            <div class="header">
-                <h1 style="font-weight: 800; margin: 0;">Захиалгын удирдлага</h1>
-                <div id="admin-name" style="color: #64748b; font-weight: 600;"></div>
-            </div>
-            <div class="orders-grid" id="orders-list"></div>
+        <div class="main">
+            <h1 style="font-weight: 800; margin-bottom: 30px;">Захиалгын хяналт</h1>
+            <div class="orders-grid" id="orders-container"></div>
         </div>
     </div>
 
     <script>
-        // FIREBASE ТОХИРГОО
         const firebaseConfig = {
             apiKey: "AIzaSyDpVh6TB0eVPHhoXjDHfxJuMjnkYnvlwRM",
             authDomain: "joymouth-e0898.firebaseapp.com",
@@ -77,27 +67,24 @@
             appId: "1:716037708846:web:22691690cb8f214cfb13bf"
         };
 
-        firebase.initializeApp(firebaseConfig);
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.firestore();
         const auth = firebase.auth();
 
-        function adminLogin() {
-            auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
-        }
-
+        function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
         function logout() { auth.signOut(); }
 
         auth.onAuthStateChanged(user => {
-            const overlay = document.getElementById('login-overlay');
-            const content = document.getElementById('admin-content');
+            const authScreen = document.getElementById('auth-screen');
+            const adminLayout = document.getElementById('admin-layout');
+            
             if (user) {
-                overlay.style.display = 'none';
-                content.style.display = 'flex';
-                document.getElementById('admin-name').innerText = "Админ: " + user.displayName;
-                startListening();
+                authScreen.style.display = 'none';
+                adminLayout.style.display = 'flex';
+                loadOrders();
             } else {
-                overlay.style.display = 'flex';
-                content.style.display = 'none';
+                authScreen.style.display = 'flex';
+                adminLayout.style.display = 'none';
             }
         });
 
@@ -110,11 +97,11 @@
             }
         }
 
-        function startListening() {
+        function loadOrders() {
             db.collection("orders").orderBy("createdAt", "desc").onSnapshot(snapshot => {
-                const list = document.getElementById('orders-list');
-                document.getElementById('total-count').innerText = snapshot.size;
-                list.innerHTML = "";
+                const container = document.getElementById('orders-container');
+                document.getElementById('total-orders').innerText = snapshot.size;
+                container.innerHTML = "";
 
                 snapshot.forEach(doc => {
                     const data = doc.data();
@@ -126,21 +113,17 @@
                         itemsHtml += `<li><span>${name}</span> <strong>x${qty}</strong></li>`;
                     }
 
-                    list.innerHTML += `
+                    container.innerHTML += `
                         <div class="order-card" style="border-top-color: ${style.border}">
-                            <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:15px;">
-                                <div>
-                                    <h3 style="margin:0; font-size:18px;">${data.userName}</h3>
-                                    <small style="color:#94a3b8;">🕒 ${time}</small>
-                                </div>
-                                <span class="status-badge" style="background:${style.bg}; color:${style.text}; border:1px solid ${style.border}40;">${data.status}</span>
+                            <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+                                <h3 style="margin:0;">${data.userName}</h3>
+                                <span class="status-badge" style="background:${style.bg}; color:${style.text};">${data.status}</span>
                             </div>
-                            <div style="font-size:13px; color:#64748b; line-height:1.6;">
-                                📍 Хаяг: <strong>${data.address}</strong><br>
-                                📞 Утас: <strong>${data.userPhone}</strong>
+                            <div style="font-size:13px; color:#64748b;">
+                                📍 ${data.address} <br> 📞 ${data.userPhone} <br> 🕒 ${time}
                             </div>
                             <ul class="order-items">${itemsHtml}</ul>
-                            <div style="text-align:right; font-size:20px; font-weight:800; color:#1e293b; margin-bottom:15px;">
+                            <div style="text-align:right; font-size:22px; font-weight:800; margin-bottom:15px;">
                                 ${data.totalPrice.toLocaleString()}₮
                             </div>
                             <select class="status-select" onchange="updateStatus('${doc.id}', this.value)">
