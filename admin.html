@@ -25,21 +25,26 @@
     </style>
 </head>
 <body>
-    <div id="auth-screen"><button class="login-btn" onclick="login()">Google-ээр нэвтрэх</button></div>
+    <div id="auth-screen">
+        <h1 style="font-weight: 800; margin-bottom: 20px;">Joy Mouth Admin 👨‍🍳</h1>
+        <button class="login-btn" onclick="login()">Google-ээр нэвтрэх</button>
+    </div>
+
     <div id="admin-layout" style="display:none; width: 100%; display: flex;">
         <div class="sidebar">
             <h2 style="font-weight: 800;">👨‍🍳 Admin</h2>
             <div style="background: #f1f5f9; padding: 20px; border-radius: 15px; margin-top: 20px;">
-                <small>НИЙТ ЗАХИАЛГА</small>
+                <small style="color: #64748b; font-weight: 600;">НИЙТ ЗАХИАЛГА</small>
                 <div id="total-orders" style="font-size: 32px; font-weight: 800; color: var(--primary);">0</div>
             </div>
-            <button onclick="logout()" style="margin-top:auto; padding:10px; cursor:pointer;">🚪 Гарах</button>
+            <button onclick="logout()" style="margin-top: auto; padding: 12px; border: none; background: #fee2e2; color: #ef4444; border-radius: 10px; font-weight: 800; cursor: pointer;">🚪 Гарах</button>
         </div>
         <div class="main">
             <h1 style="font-weight: 800; margin-bottom: 30px;">Захиалгын хяналт</h1>
             <div class="orders-grid" id="orders-container"></div>
         </div>
     </div>
+
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyDpVh6TB0eVPHhoXjDHfxJuMjnkYnvlwRM",
@@ -62,7 +67,7 @@
             if (user) loadOrders();
         });
 
-        function getStatusStyle(status) {
+        function getStyle(status) {
             switch(status) {
                 case "Шинэ": return { bg: "#fff3e0", text: "#ef6c00", border: "#f39c12" };
                 case "Төлбөр хүлээгдэж байна": return { bg: "#e0f2fe", text: "#0369a1", border: "#3498db" };
@@ -81,7 +86,7 @@
                 container.innerHTML = "";
                 snapshot.forEach(doc => {
                     const data = doc.data();
-                    const style = getStatusStyle(data.status);
+                    const style = getStyle(data.status);
                     let itemsHtml = Object.entries(data.items).map(([n, q]) => `<li><span>${n}</span> <strong>x${q}</strong></li>`).join('');
                     container.innerHTML += `
                         <div class="order-card" style="border-top-color: ${style.border}">
@@ -89,16 +94,16 @@
                                 <h3 style="margin:0;">${data.userName}</h3>
                                 <span class="status-badge" style="background:${style.bg}; color:${style.text};">${data.status}</span>
                             </div>
-                            <div style="font-size:13px;">📍 ${data.address} <br> 📞 ${data.userPhone}</div>
+                            <div style="font-size:13px; color:#64748b;">📍 ${data.address} <br> 📞 ${data.userPhone}</div>
                             <ul class="order-items">${itemsHtml}</ul>
                             <div style="text-align:right; font-size:22px; font-weight:800; margin-bottom:15px;">${data.totalPrice.toLocaleString()}₮</div>
                             <select class="status-select" onchange="updateStatus('${doc.id}', this.value)">
-                                <option value="Шинэ" ${data.status === 'Шинэ' ? 'selected' : ''}>Шинэ</option>
-                                <option value="Төлбөр хүлээгдэж байна" ${data.status === 'Төлбөр хүлээгдэж байна' ? 'selected' : ''}>Төлбөр хүлээгдэж байна</option>
-                                <option value="Бэлтгэгдэж байна" ${data.status === 'Бэлтгэгдэж байна' ? 'selected' : ''}>Бэлтгэгдэж байна</option>
-                                <option value="Хүргэлтэнд гарсан" ${data.status === 'Хүргэлтэнд гарсан' ? 'selected' : ''}>Хүргэлтэнд гарсан</option>
-                                <option value="Хүргэгдсэн" ${data.status === 'Хүргэгдсэн' ? 'selected' : ''}>Хүргэгдсэн</option>
-                                <option value="Цуцлагдсан" ${data.status === 'Цуцлагдсан' ? 'selected' : ''}>Цуцлагдсан</option>
+                                <option value="Шинэ" ${data.status==='Шинэ'?'selected':''}>Шинэ</option>
+                                <option value="Төлбөр хүлээгдэж байна" ${data.status==='Төлбөр хүлээгдэж байна'?'selected':''}>Төлбөр хүлээгдэж байна</option>
+                                <option value="Бэлтгэгдэж байна" ${data.status==='Бэлтгэгдэж байна'?'selected':''}>Бэлтгэгдэж байна</option>
+                                <option value="Хүргэлтэнд гарсан" ${data.status==='Хүргэлтэнд гарсан'?'selected':''}>Хүргэлтэнд гарсан</option>
+                                <option value="Хүргэгдсэн" ${data.status==='Хүргэгдсэн'?'selected':''}>Хүргэгдсэн</option>
+                                <option value="Цуцлагдсан" ${data.status==='Цуцлагдсан'?'selected':''}>Цуцлагдсан</option>
                             </select>
                         </div>`;
                 });
