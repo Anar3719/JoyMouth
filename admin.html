@@ -3,175 +3,267 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Joy Mouth - Admin Panel</title>
+    <title>Joy Mouth Admin - Wide View</title>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-    
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-
     <style>
-        :root { --primary: #2ecc71; --bg: #f4f7f6; }
-        body { font-family: 'Inter', sans-serif; margin: 0; background: var(--bg); display: flex; height: 100vh; }
-        
-        /* Sidebar Layout */
-        .sidebar { width: 280px; background: white; border-right: 1px solid #e2e8f0; padding: 30px; display: flex; flex-direction: column; flex-shrink: 0; }
-        .main { flex: 1; padding: 40px; overflow-y: auto; }
-        
-        /* Grid System */
-        .orders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; }
-        
-        /* Card Style */
-        .order-card { 
-            background: white; border-radius: 20px; padding: 20px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-top: 6px solid #cbd5e1; 
-            display: flex; flex-direction: column; transition: 0.3s;
+        :root {
+            --bg-color: #f0f2f5;
+            --card-bg: #ffffff;
+            --text-main: #2d3436;
+            --text-sub: #636e72;
+            --border-color: #edf2f7;
         }
-        .order-card:hover { transform: translateY(-5px); }
 
-        .status-badge { padding: 6px 12px; border-radius: 20px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
-        
-        .order-items { background: #f8fafc; padding: 15px; border-radius: 12px; list-style: none; margin: 15px 0; padding-left: 0; flex-grow: 1; }
-        .order-items li { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; border-bottom: 1px dashed #e2e8f0; }
-        .order-items li:last-child { border-bottom: none; }
+        body { 
+            font-family: 'Inter', -apple-system, system-ui, sans-serif; 
+            background: var(--bg-color); 
+            margin: 0;
+            padding: 20px; 
+            color: var(--text-main); 
+        }
+
+        .admin-container { 
+            max-width: 1600px; 
+            margin: auto; 
+        }
+
+        .header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 20px; 
+            background: var(--card-bg); 
+            padding: 10px 25px; 
+            border-radius: 12px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
+        }
+
+        /* 27 инчийн дэлгэцэнд зориулсан GRID */
+        #admin-orders-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            align-items: start;
+        }
+
+        .order-card { 
+            background: var(--card-bg); 
+            padding: 15px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02); 
+            border-top: 6px solid #dfe6e9; 
+            display: flex;
+            flex-direction: column;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .order-card:hover { 
+            transform: translateY(-3px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.05);
+        }
+
+        .order-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .user-name { font-weight: 800; font-size: 15px; color: #2d3436; }
+        .order-time { color: var(--text-sub); font-size: 11px; display: block; margin-top: 2px; }
+
+        .status-badge { 
+            padding: 4px 8px; 
+            border-radius: 6px; 
+            font-size: 10px; 
+            font-weight: 800; 
+            color: white; 
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .info-section {
+            font-size: 13px;
+            margin-bottom: 10px;
+            color: var(--text-main);
+            line-height: 1.4;
+        }
+
+        .items-box { 
+            background: #f8f9fa; 
+            padding: 10px; 
+            border-radius: 8px; 
+            margin-bottom: 10px; 
+            font-size: 13px;
+            border: 1px solid #f1f2f6;
+        }
+
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 3px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .item-row:last-child { border-bottom: none; }
+
+        .total-price {
+            text-align: right; 
+            font-weight: 800; 
+            font-size: 17px; 
+            color: #2d3436;
+            margin-bottom: 12px;
+        }
 
         .status-select { 
-            width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; 
-            background: #fff; font-weight: 600; cursor: pointer; font-family: inherit;
+            width: 100%;
+            padding: 8px; 
+            border-radius: 6px; 
+            border: 1px solid #dfe6e9; 
+            font-size: 12px;
+            background: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            outline: none;
         }
 
-        /* Responsive */
-        @media (max-width: 900px) {
-            body { flex-direction: column; height: auto; overflow: auto; }
-            .sidebar { width: 100%; height: auto; padding: 20px; border-right: none; border-bottom: 1px solid #e2e8f0; box-sizing: border-box; }
-            .main { padding: 20px; }
-            .orders-grid { grid-template-columns: 1fr; }
-        }
+        .status-select:focus { border-color: #3498db; }
 
-        /* Auth Screen */
-        #auth-screen { position: fixed; inset: 0; background: #f1f5f9; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
-        .login-btn { padding: 15px 35px; background: #4285F4; color: white; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; font-size: 16px; }
+        /* Дуут дохионы товчлуур */
+        #mute-btn { cursor: pointer; font-size: 20px; border: none; background: none; }
     </style>
 </head>
 <body>
-    <div id="auth-screen">
-        <h1 style="font-weight: 800; margin-bottom: 20px; font-size: 32px;">Joy Mouth Admin 👨‍🍳</h1>
-        <button class="login-btn" onclick="login()">Google-ээр нэвтрэх</button>
-    </div>
 
-    <div id="admin-layout" style="display:none; width: 100%;">
-        <div class="sidebar">
-            <h2 style="font-weight: 800; font-size: 24px;">👨‍🍳 Admin Panel</h2>
-            <div style="background: #f1f5f9; padding: 20px; border-radius: 15px; margin-top: 10px;">
-                <small style="color: #64748b; font-weight: 800;">НИЙТ ЗАХИАЛГА</small>
-                <div id="total-orders" style="font-size: 32px; font-weight: 800; color: var(--primary);">0</div>
-            </div>
-            <button onclick="logout()" style="margin-top: 30px; padding: 15px; border: none; background: #fee2e2; color: #ef4444; border-radius: 12px; font-weight: 800; cursor: pointer;">🚪 Системээс гарах</button>
+<div class="admin-container">
+    <div class="header">
+        <div>
+            <h2 style="margin:0; font-size: 20px;">👨‍🍳 Joy Mouth Admin</h2>
         </div>
-        
-        <div class="main">
-            <h1 style="font-weight: 800; margin-bottom: 25px;">Захиалгын хяналт</h1>
-            <div class="orders-grid" id="orders-container"></div>
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <div id="stats" style="font-weight: bold; font-size: 14px; background: #eee; padding: 5px 12px; border-radius: 20px;">Ачаалж байна...</div>
+            <button id="mute-btn" onclick="toggleMute()">🔔</button>
         </div>
     </div>
 
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyDpVh6TB0eVPHhoXjDHfxJuMjnkYnvlwRM",
-            authDomain: "joymouth-e0898.firebaseapp.com",
-            projectId: "joymouth-e0898",
-            storageBucket: "joymouth-e0898.firebasestorage.app",
-            messagingSenderId: "716037708846",
-            appId: "1:716037708846:web:22691690cb8f214cfb13bf"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        const auth = firebase.auth();
+    <div id="admin-orders-list">
+        </div>
+</div>
 
-        function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
-        function logout() { auth.signOut(); }
+<audio id="notif-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
 
-        auth.onAuthStateChanged(user => {
-            document.getElementById('auth-screen').style.display = user ? 'none' : 'flex';
-            document.getElementById('admin-layout').style.display = user ? 'flex' : 'none';
-            if (user) loadOrders();
-        });
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
-        // Төлөвт тохирсон өнгө авах
-        function getStyle(status) {
-            switch(status) {
-                case "Шинэ": return { bg: "#fff3e0", text: "#ef6c00", border: "#f39c12" };
-                case "Төлбөр хүлээгдэж байна": return { bg: "#e0f2fe", text: "#0369a1", border: "#3498db" };
-                case "Бэлтгэгдэж байна": return { bg: "#f3e5f5", text: "#7b1fa2", border: "#9b59b6" };
-                case "Хүргэлтэнд гарсан": return { bg: "#fff3e0", text: "#e65100", border: "#e67e22" };
-                case "Хүргэгдсэн": return { bg: "#f0fdf4", text: "#15803d", border: "#2ecc71" };
-                case "Цуцлагдсан": return { bg: "#ffebee", text: "#c62828", border: "#e74c3c" };
-                default: return { bg: "#f1f5f9", text: "#475569", border: "#cbd5e1" };
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyDpVh6TB0eVPHhoXjDHfxJuMjnkYnvlwRM",
+        authDomain: "joymouth-e0898.firebaseapp.com",
+        projectId: "joymouth-e0898",
+        storageBucket: "joymouth-e0898.firebasestorage.app",
+        messagingSenderId: "716037708846",
+        appId: "1:716037708846:web:22691690cb8f214cfb13bf",
+        measurementId: "G-0DGDM401SN"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const sound = document.getElementById('notif-sound');
+    let lastOrderCount = -1;
+    let isMuted = false;
+
+    const statusOptions = ["Шинэ", "Төлбөр хүлээгдэж байна", "Бэлтгэгдэж байна", "Хүргэлтэнд гарсан", "Хүргэгдсэн", "Цуцлагдсан"];
+
+    function getStatusColor(status) {
+        switch(status) {
+            case "Шинэ": return "#f39c12";
+            case "Төлбөр хүлээгдэж байна": return "#3498db";
+            case "Бэлтгэгдэж байна": return "#9b59b6";
+            case "Хүргэлтэнд гарсан": return "#e67e22";
+            case "Хүргэгдсэн": return "#2ecc71";
+            case "Цуцлагдсан": return "#e74c3c";
+            default: return "#95a5a6";
+        }
+    }
+
+    firebase.auth().onAuthStateChanged((user) => {
+        if (user && user.email === "g.anar1202@gmail.com") { 
+            startListeningOrders(); 
+        } else { 
+            firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()); 
+        }
+    });
+
+    function toggleMute() {
+        isMuted = !isMuted;
+        document.getElementById('mute-btn').innerText = isMuted ? "🔕" : "🔔";
+    }
+
+    function startListeningOrders() {
+        db.collection("orders").orderBy("createdAt", "desc").limit(50).onSnapshot((snapshot) => {
+            const list = document.getElementById('admin-orders-list');
+            list.innerHTML = "";
+            
+            if (lastOrderCount !== -1 && snapshot.size > lastOrderCount && !isMuted) { 
+                sound.play(); 
             }
-        }
+            lastOrderCount = snapshot.size;
+            document.getElementById('stats').innerText = `Нийт захиалга: ${snapshot.size}`;
 
-        // Захиалгуудыг Real-time ачаалах
-        function loadOrders() {
-            db.collection("orders").orderBy("createdAt", "desc").onSnapshot(snapshot => {
-                const container = document.getElementById('orders-container');
-                document.getElementById('total-orders').innerText = snapshot.size;
-                container.innerHTML = "";
-                
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    const style = getStyle(data.status);
-                    const time = data.createdAt ? data.createdAt.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '--:--';
-                    
-                    let itemsHtml = Object.entries(data.items).map(([n, q]) => `<li><span>${n}</span> <strong>x${q}</strong></li>`).join('');
-                    
-                    container.innerHTML += `
-                        <div class="order-card" style="border-top-color: ${style.border}">
-                            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
-                                <div>
-                                    <h3 style="margin:0; font-size:18px;">${data.userName}</h3>
-                                    <small style="color:#64748b;">🕒 ${time}</small>
-                                </div>
-                                <span class="status-badge" style="background:${style.bg}; color:${style.text}; border:1px solid ${style.border}40;">${data.status}</span>
-                            </div>
-                            
-                            <div style="font-size:13px; color:#475569; background:#fff; padding:8px 0; border-radius:8px;">
-                                📍 ${data.address} <br> 📞 <a href="tel:${data.userPhone}" style="color:var(--primary); text-decoration:none; font-weight:bold;">${data.userPhone}</a>
-                            </div>
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                const color = getStatusColor(data.status);
+                let itemsHtml = Object.entries(data.items).map(([n, c]) => `
+                    <div class="item-row">
+                        <span>${n}</span>
+                        <strong>x${c}</strong>
+                    </div>
+                `).join('');
 
-                            <ul class="order-items">${itemsHtml}</ul>
-                            
-                            <div style="text-align:right; font-size:22px; font-weight:800; margin-bottom:15px; color:#1e293b;">
-                                ${data.totalPrice.toLocaleString()}₮
-                            </div>
-
-                            <select class="status-select" onchange="updateStatus('${doc.id}', this.value)">
-                                <option value="Шинэ" ${data.status==='Шинэ'?'selected':''}>Шинэ</option>
-                                <option value="Төлбөр хүлээгдэж байна" ${data.status==='Төлбөр хүлээгдэж байна'?'selected':''}>Төлбөр хүлээгдэж байна</option>
-                                <option value="Бэлтгэгдэж байна" ${data.status==='Бэлтгэгдэж байна'?'selected':''}>Бэлтгэгдэж байна</option>
-                                <option value="Хүргэлтэнд гарсан" ${data.status==='Хүргэлтэнд гарсан'?'selected':''}>Хүргэлтэнд гарсан</option>
-                                <option value="Хүргэгдсэн" ${data.status==='Хүргэгдсэн'?'selected':''}>Хүргэгдсэн</option>
-                                <option value="Цуцлагдсан" ${data.status==='Цуцлагдсан'?'selected':''}>Цуцлагдсан</option>
-                            </select>
-                        </div>`;
+                let selectHtml = `<select class="status-select" onchange="updateStatus('${doc.id}', this.value)">`;
+                statusOptions.forEach(opt => {
+                    selectHtml += `<option value="${opt}" ${data.status === opt ? 'selected' : ''}>${opt}</option>`;
                 });
-            });
-        }
+                selectHtml += `</select>`;
 
-        // Төлөв шинэчлэх
-        function updateStatus(id, status) {
-            db.collection("orders").doc(id).update({ status: status })
-            .then(() => {
-                const Toast = Swal.mixin({
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 2000,
-                    timerProgressBar: true
-                });
-                Toast.fire({ icon: 'success', title: 'Төлөв шинэчлэгдлээ' });
+                const card = document.createElement('div');
+                card.className = 'order-card';
+                card.style.borderTopColor = color;
+                card.innerHTML = `
+                    <div class="order-header">
+                        <div>
+                            <span class="user-name">${data.userName}</span>
+                            <span class="order-time">🕒 ${data.createdAt?.toDate().toLocaleString() || 'Саяхан'}</span>
+                        </div>
+                        <span class="status-badge" style="background:${color}">${data.status}</span>
+                    </div>
+                    
+                    <div class="info-section">
+                        📍 ${data.address}<br>
+                        📞 <a href="tel:${data.userPhone}" style="text-decoration:none; color:inherit; font-weight:bold;">${data.userPhone}</a>
+                    </div>
+                    
+                    <div class="items-box">
+                        ${itemsHtml}
+                    </div>
+                    
+                    <div class="total-price">${data.totalPrice.toLocaleString()}₮</div>
+                    
+                    <div style="margin-top:auto;">
+                        <div style="font-size:10px; color:#aaa; margin-bottom:4px;">ТӨЛӨВ ӨӨРЧЛӨХ:</div>
+                        ${selectHtml}
+                    </div>
+                `;
+                list.appendChild(card);
             });
-        }
-    </script>
+        });
+    }
+
+    function updateStatus(id, newStatus) {
+        db.collection("orders").doc(id).update({ status: newStatus })
+            .catch(e => Swal.fire("Алдаа", e.message, "error"));
+    }
+</script>
 </body>
 </html>
