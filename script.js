@@ -1,4 +1,3 @@
-// --- FIREBASE ТОХИРГОО ---
 const firebaseConfig = {
     apiKey: "AIzaSyDpVh6TB0eVPHhoXjDHfxJuMjnkYnvlwRM",
     authDomain: "joymouth-e0898.firebaseapp.com",
@@ -16,50 +15,39 @@ const db = firebase.firestore();
 let cart = [];
 let total = 0;
 
-// Бүтээгдэхүүний зургийн сан
 const productImages = {
-    "Бүргер": "burger_real.jpg",
-    "Сэндвич": "sandwich_real.jpg",
-    "Кимбаб": "kimbap_real.JPG", 
-    "Чиабатта": "ciabatta_real.jpg"
+    "Бүргер": "burger_real.jpg", "Сэндвич": "sandwich_real.jpg",
+    "Кимбаб": "kimbap_real.JPG", "Чиабатта": "ciabatta_real.jpg"
 };
 
-// Төлөвийн өнгө тодорхойлох
 function getStatusColor(status) {
     switch(status) {
         case "Шинэ": return "#f39c12";
         case "Төлбөр хүлээгдэж байна": return "#3498db";
-        case "Бэлтгэгдэж байна": return "#9b59b6";
-        case "Хүргэлтэнд гарсан": return "#e67e22";
         case "Хүргэгдсэн": return "#2ecc71";
         case "Цуцлагдсан": return "#e74c3c";
         default: return "#95a5a6";
     }
 }
 
-// --- НЭВТРЭХ ХЭСЭГ ---
 function signInWithGoogle() {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithPopup(provider).catch((err) => alert("Алдаа: " + err.message));
+    auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
 }
 
 function logout() { auth.signOut(); }
 
 auth.onAuthStateChanged((user) => {
-    const loginScreen = document.getElementById('login-screen');
-    const mainContent = document.getElementById('main-content');
-    
     if (user) {
-        if(loginScreen) loginScreen.style.display = 'none';
-        if(mainContent) mainContent.style.display = 'flex';
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('main-content').style.display = 'flex';
+        document.getElementById('user-info').innerText = "👤 " + user.displayName;
         observeOrderHistory(user.uid); 
     } else {
-        if(loginScreen) loginScreen.style.display = 'flex';
-        if(mainContent) mainContent.style.display = 'none';
+        document.getElementById('login-screen').style.display = 'flex';
+        document.getElementById('main-content').style.display = 'none';
     }
 });
 
-// --- САГСНЫ ФУНКЦҮҮД ---
 function addToCart(name, price, icon) {
     cart.push({name, price, icon});
     total += price;
@@ -77,142 +65,77 @@ function removeFromCart(name) {
 
 function updateCartUI() {
     const list = document.getElementById('cart-items');
-    const badge = document.getElementById('cart-count-badge');
-    const totalPriceEl = document.getElementById('total-price');
-    
-    if (!list) return;
     list.innerHTML = "";
-    
-    const itemCounts = {};
-    cart.forEach(item => {
-        if (!itemCounts[item.name]) { 
-            itemCounts[item.name] = { price: item.price, count: 0, icon: item.icon }; 
-        }
-        itemCounts[item.name].count++;
-    });
+    const counts = {};
+    cart.forEach(item => { counts[item.name] = (counts[item.name] || {p:item.price, c:0}); counts[item.name].c++; });
 
-    let totalItems = 0;
-    for (const name in itemCounts) {
-        let { price, count } = itemCounts[name];
-        totalItems += count;
-
+    for (const name in counts) {
         let li = document.createElement('li');
-        li.className = "cart-item";
+        li.className = "cart-item-container";
         li.innerHTML = `
-            <img src="${productImages[name]}" onerror="this.src='https://via.placeholder.com/50'">
-            <div class="cart-item-info">
-                <strong>${name}</strong>
-                <small>${(price * count).toLocaleString()}₮</small>
+            <img src="${productImages[name]}" style="width:45px; height:45px; border-radius:10px; object-fit:cover;">
+            <div style="flex:1;">
+                <div style="font-weight:600; font-size:14px;">${name}</div>
+                <small>${(counts[name].p * counts[name].c).toLocaleString()}₮</small>
             </div>
-            <div class="qty-controls">
-                <button onclick="removeFromCart('${name}')" style="width:26px; height:26px; border-radius:8px; border:1px solid #ddd; background:white; cursor:pointer; display:flex; align-items:center; justify-content:center; font-weight:bold;">-</button>
-                <span style="font-weight:bold; min-width:20px; text-align:center;">${count}</span>
-                <button onclick="addToCart('${name}', ${price}, '')" style="width:26px; height:26px; border-radius:8px; border:1px solid #ddd; background:white; cursor:pointer; display:flex; align-items:center; justify-content:center; font-weight:bold;">+</button>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <button onclick="removeFromCart('${name}')" style="width:24px; height:24px; border-radius:50%; border:1px solid #ddd; background:white;">-</button>
+                <span style="font-weight:bold;">${counts[name].c}</span>
+                <button onclick="addToCart('${name}', ${counts[name].p}, '')" style="width:24px; height:24px; border-radius:50%; border:1px solid #ddd; background:white;">+</button>
             </div>`;
         list.appendChild(li);
     }
-
-    if(badge) badge.textContent = totalItems;
-    if(totalPriceEl) totalPriceEl.textContent = total.toLocaleString();
+    document.getElementById('total-price').textContent = total.toLocaleString();
 }
 
-// --- ЗАХИАЛГА ИЛГЭЭХ ---
 async function sendOrder() {
     const user = auth.currentUser;
     const office = document.getElementById('office').value;
     const phone = document.getElementById('phone').value;
-
-    if (!user || cart.length === 0 || !office || !phone) { 
-        return Swal.fire("Дутуу", "Сагс хоосон эсвэл мэдээлэл дутуу байна", "warning"); 
-    }
+    if (!user || cart.length === 0 || !office || !phone) return Swal.fire("Дутуу", "Мэдээллээ шалгана уу", "warning");
 
     const itemCounts = {};
     cart.forEach(item => { itemCounts[item.name] = (itemCounts[item.name] || 0) + 1; });
-    
+
     try {
         await db.collection("orders").add({
-            userId: user.uid,
-            userName: user.displayName,
-            userPhone: phone,
-            address: office,
-            items: itemCounts,
-            totalPrice: total,
-            status: "Шинэ",
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            userId: user.uid, userName: user.displayName, userPhone: phone,
+            address: office, items: itemCounts, totalPrice: total,
+            status: "Шинэ", createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
-        
-        cart = [];
-        total = 0;
-        updateCartUI(); 
-        document.getElementById('office').value = "";
-        
-        Swal.fire({
-            title: "Амжилттай!",
-            text: "Таны захиалгыг хүлээн авлаа.",
-            icon: "success",
-            confirmButtonColor: "#2ecc71"
-        });
-
-    } catch (e) { 
-        console.error(e);
-        Swal.fire("Алдаа", "Захиалга илгээхэд алдаа гарлаа", "error"); 
-    }
+        cart = []; total = 0; updateCartUI();
+        Swal.fire("Амжилттай", "Захиалга илгээгдлээ", "success");
+    } catch (e) { Swal.fire("Алдаа", e.message, "error"); }
 }
 
-// --- ЗАХИАЛГЫН ТҮҮХ ---
 function observeOrderHistory(userId) {
     const historyList = document.getElementById('history-list');
-    if (!historyList) return;
-
-    db.collection("orders")
-        .where("userId", "==", userId)
-        .orderBy("createdAt", "desc")
-        .limit(8)
-        .onSnapshot((snapshot) => {
-            if (snapshot.empty) { 
-                historyList.innerHTML = "<p style='color:#94a3b8; font-size:14px;'>Одоогоор захиалга байхгүй байна.</p>"; 
-                return; 
-            }
-
-            let html = "";
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                const date = data.createdAt ? data.createdAt.toDate().toLocaleDateString() : "Саяхан";
-                const statusColor = getStatusColor(data.status);
-                
-                html += `
-                    <div class="history-card" onclick="showOrderDetails('${doc.id}')" style="border-left: 5px solid ${statusColor}; cursor:pointer;">
-                        <div>
-                            <span style="font-size:12px; color:#94a3b8;">📅 ${date}</span><br>
-                            <strong style="font-size:15px;">${data.totalPrice.toLocaleString()}₮</strong>
-                        </div>
-                        <div style="text-align:right;">
-                            <span style="background:${statusColor}20; color:${statusColor}; padding:5px 12px; border-radius:10px; font-size:12px; font-weight:bold;">
-                                ${data.status}
-                            </span>
-                        </div>
-                    </div>`;
-            });
-            historyList.innerHTML = html;
+    db.collection("orders").where("userId", "==", userId).orderBy("createdAt", "desc").limit(10)
+    .onSnapshot((snapshot) => {
+        if (snapshot.empty) { historyList.innerHTML = "<p style='color:#888;'>Түүх хоосон байна.</p>"; return; }
+        let html = "";
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const date = data.createdAt ? data.createdAt.toDate().toLocaleDateString() : "Саяхан";
+            const color = getStatusColor(data.status);
+            html += `
+                <div onclick="showOrderDetails('${doc.id}')" style="cursor:pointer; background:white; padding:15px; border-radius:15px; margin-bottom:10px; border-left:6px solid ${color}; box-shadow:0 2px 5px rgba(0,0,0,0.05); display:flex; justify-content:space-between; align-items:center;">
+                    <div><strong>📅 ${date}</strong><br><small>${data.totalPrice.toLocaleString()}₮</small></div>
+                    <span style="background:${color}; color:white; padding:5px 12px; border-radius:20px; font-size:11px; font-weight:bold;">${data.status}</span>
+                </div>`;
         });
-}
-
-// Дэлгэрэнгүй харах (Popup)
-async function showOrderDetails(orderId) {
-    const doc = await db.collection("orders").doc(orderId).get();
-    if (!doc.exists) return;
-    const data = doc.data();
-    
-    let items = Object.entries(data.items).map(([n, c]) => `<li>${n} x ${c}</li>`).join('');
-
-    Swal.fire({
-        title: 'Захиалгын дэлгэрэнгүй',
-        html: `<div style="text-align:left;">
-                <p>📍 Хаяг: ${data.address}</p>
-                <p>📊 Төлөв: <b style="color:${getStatusColor(data.status)}">${data.status}</b></p>
-                <hr>
-                <ul style="padding-left:20px;">${items}</ul>
-               </div>`,
-        confirmButtonText: 'Хаах'
+        historyList.innerHTML = html;
+    }, (error) => {
+        console.error(error);
+        if(error.message.includes("index")) historyList.innerHTML = "<p style='color:red;'>Firebase Index үүсгэнэ үү.</p>";
     });
 }
+
+async function showOrderDetails(id) {
+    const doc = await db.collection("orders").doc(id).get();
+    const data = doc.data();
+    let items = Object.entries(data.items).map(([n, c]) => `<li>${n} x ${c}</li>`).join('');
+    Swal.fire({ title: 'Захиалга', html: `<div style="text-align:left;">📍 ${data.address}<br>📞 ${data.userPhone}<hr><ul>${items}</ul></div>` });
+}
+
+function showProductImage(url, title) { Swal.fire({ title: title, imageUrl: url, imageWidth: 400 }); }
