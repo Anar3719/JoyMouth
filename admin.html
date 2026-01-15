@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Joy Mouth - Admin Panel</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
+        .admin-container { max-width: 800px; margin: auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: white; padding: 15px 25px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .order-card { background: white; padding: 20px; border-radius: 15px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: relative; border-left: 5px solid #f39c12; }
+        .order-card.delivered { border-left-color: #2ecc71; opacity: 0.8; }
+        .order-card.cancelled { border-left-color: #e74c3c; }
+        .order-header { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px; }
+        .items-list { background: #f9f9f9; padding: 10px; border-radius: 8px; margin: 10px 0; }
+        .controls { display: flex; gap: 10px; margin-top: 15px; }
+        button { cursor: pointer; padding: 10px 20px; border: none; border-radius: 8px; font-weight: bold; transition: 0.2s; }
+        .btn-ready { background: #2ecc71; color: white; flex: 2; }
+        .btn-ready:hover { background: #27ae60; }
+        .btn-cancel { background: #ecf0f1; color: #7f8c8d; flex: 1; }
+        .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; color: white; }
+    </style>
+</head>
+<body>
+
+<div class="admin-container">
+    <div class="header">
+        <h2>👨‍🍳 Joy Mouth Admin</h2>
+        <div id="stats" style="font-weight: bold; color: #5d4037;">Холбогдож байна...</div>
+    </div>
+
+    <div id="admin-orders-list">
+        <p style="text-align: center; color: #888;">Захиалга ачаалж байна...</p>
+    </div>
+</div>
+
+<audio id="notif-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyDpVh6TB0eVPHhoXjDHfxJuMjnkYnvlwRM",
+        authDomain: "joymouth-e0898.firebaseapp.com",
+        projectId: "joymouth-e0898",
+        storageBucket: "joymouth-e0898.firebasestorage.app",
+        messagingSenderId: "716037708846",
+        appId: "1:716037708846:web:22691690cb8f214cfb13bf",
+        measurementId: "G-0DGDM401SN"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const sound = document.getElementById('notif-sound');
+    let lastOrderCount = -1;
+
+    // ЗАХИАЛГУУДЫГ БОДИТ ЦАГТ ХЯНАХ
+    db.collection("orders").orderBy("createdAt", "desc").limit(20).onSnapshot((snapshot) => {
+        const list = document.getElementById('admin-orders-list');
+        const stats = document.getElementById('stats');
+        list.innerHTML = "";
+        
+        // Шинэ захиалга ирснийг шалгаж дуу гаргах
+        if (lastOrderCount !== -1 && snapshot.size > lastOrderCount) {
+            sound.play().catch(e => console.log("Дуу тоглуулахад алдаа:", e));
+        }
+        lastOrderCount = snapshot.size;
+        stats.innerText = `Нийт: ${snapshot.size} захиалга`;
+
+        if (snapshot.empty) {
+            list.innerHTML = "<p style='text-align:center; padding:50px;'>Одоогоор захиалга байхгүй байна.</p>";
+            return;
+        }
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const date = data.createdAt ? data.createdAt.toDate().toLocaleString() : "Саяхан";
+            const isDelivered = data.status === "Хүргэгдсэн";
+            const isCancelled = data.status === "Цуцлагдсан";
+            
+            let itemsHtml = "";
+            for (const [name, count] of Object.entries(data.items)) {
+                itemsHtml += `<div>• ${name} <span style="float:right">x${count}</span></div>`;
+            }
+
+            const statusColor = data.status === "Шинэ" ? "#f39c12" : (isDelivered ? "#2ecc71" : "#e74c3c");
+
+            const card = document.createElement('div');
+            card.className = `order-card ${isDelivered ? 'delivered' : ''} ${isCancelled ? 'cancelled' : ''}`;
+            card.innerHTML = `
+                <div class="order-header">
+                    <div>
+                        <strong>${data.userName}</strong> <br>
+                        <small style="color:#888;">${date}</small>
+                    </div>
+                    <span class="status-badge" style="background:${statusColor}">${data.status}</span>
+                </div>
+                <div style="margin: 5px 0;">📍 <strong>Хаяг:</strong> ${data.address}</div>
+                <div style="margin: 5px 0;">📞 <strong>Утас:</strong> <a href="tel:${data.userPhone}">${data.userPhone}</a></div>
+                <div class="items-list">${itemsHtml}</div>
+                <div style="text-align:right; font-weight:bold; font-size:18px; color:#2c3e50;">${data.totalPrice.toLocaleString()}₮</div>
+                
+                ${!isDelivered && !isCancelled ? `
+                    <div class="controls">
+                        <button class="btn-cancel" onclick="updateStatus('${doc.id}', 'Цуцлагдсан')">Цуцлах</button>
+                        <button class="btn-ready" onclick="updateStatus('${doc.id}', 'Хүргэгдсэн')">Хүргэсэн</button>
+                    </div>
+                ` : ''}
+            `;
+            list.appendChild(card);
+        });
+    });
+
+    function updateStatus(id, newStatus) {
+        db.collection("orders").doc(id).update({ status: newStatus })
+          .then(() => {
+              console.log("Status updated to: " + newStatus);
+          })
+          .catch(e => alert("Алдаа: " + e.message));
+    }
+</script>
+</body>
+</html>
