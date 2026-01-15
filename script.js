@@ -24,16 +24,15 @@ function getStatusColor(status) {
     switch(status) {
         case "Шинэ": return "#f39c12";
         case "Төлбөр хүлээгдэж байна": return "#3498db";
+        case "Бэлтгэгдэж байна": return "#9b59b6";
+        case "Хүргэлтэнд гарсан": return "#e67e22";
         case "Хүргэгдсэн": return "#2ecc71";
         case "Цуцлагдсан": return "#e74c3c";
         default: return "#95a5a6";
     }
 }
 
-function signInWithGoogle() {
-    auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
-}
-
+function signInWithGoogle() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
 function logout() { auth.signOut(); }
 
 auth.onAuthStateChanged((user) => {
@@ -125,9 +124,6 @@ function observeOrderHistory(userId) {
                 </div>`;
         });
         historyList.innerHTML = html;
-    }, (error) => {
-        console.error(error);
-        if(error.message.includes("index")) historyList.innerHTML = "<p style='color:red;'>Firebase Index үүсгэнэ үү.</p>";
     });
 }
 
