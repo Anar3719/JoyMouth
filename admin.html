@@ -6,67 +6,160 @@
     <title>Joy Mouth - Admin Panel</title>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
     <style>
-        :root {
-            --primary: #2ecc71;
-            --bg: #f1f3f6;
-            --white: #ffffff;
-            --text: #2d3436;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            margin: 0;
-            background-color: var(--bg);
-            color: var(--text);
-            display: flex;
-            height: 100vh;
-        }
-
+        :root { --primary: #2ecc71; --bg: #f4f7f6; --white: #ffffff; }
+        body { font-family: 'Inter', sans-serif; margin: 0; background-color: var(--bg); display: flex; height: 100vh; overflow: hidden; }
+        
         /* Sidebar */
-        .admin-sidebar {
-            width: 260px;
-            background: var(--white);
-            border-right: 1px solid #e0e0e0;
-            padding: 30px 20px;
-            display: flex;
-            flex-direction: column;
+        .admin-sidebar { width: 280px; background: var(--white); border-right: 1px solid #e2e8f0; padding: 30px; display: flex; flex-direction: column; }
+        .logo { font-size: 24px; font-weight: 800; margin-bottom: 40px; display: flex; align-items: center; gap: 10px; }
+        .stats-card { background: #f8fafc; padding: 20px; border-radius: 16px; margin-bottom: 20px; border: 1px solid #e2e8f0; }
+        .stats-card small { color: #64748b; font-size: 12px; font-weight: 600; }
+        .stats-card div { font-size: 28px; font-weight: 800; color: var(--primary); }
+
+        /* Main Content */
+        .admin-main { flex: 1; padding: 40px; overflow-y: auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        
+        .orders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 25px; }
+        .order-card { background: white; border-radius: 20px; padding: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border-top: 6px solid #cbd5e1; transition: 0.3s; }
+        .order-card:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        
+        .status-badge { padding: 6px 14px; border-radius: 99px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+        .order-items { background: #f1f5f9; padding: 15px; border-radius: 12px; list-style: none; margin: 15px 0; padding-left: 0; }
+        .order-items li { display: flex; justify-content: space-between; padding: 4px 0; font-size: 14px; color: #334155; }
+        
+        .status-select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0; background: #fff; font-weight: 600; cursor: pointer; margin-top: 10px; }
+        
+        #login-overlay { position: fixed; inset: 0; background: #f1f5f9; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2000; }
+        .login-btn { padding: 16px 32px; background: #4285F4; color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 16px; }
+    </style>
+</head>
+<body>
+
+    <div id="login-overlay">
+        <h1 style="font-weight: 800; margin-bottom: 20px;">Joy Mouth Admin 👨‍🍳</h1>
+        <button class="login-btn" onclick="adminLogin()">Google-ээр нэвтрэх</button>
+    </div>
+
+    <div id="admin-content" style="display:none; width: 100%; display: flex;">
+        <div class="admin-sidebar">
+            <div class="logo">👨‍🍳 Joy Mouth</div>
+            <div class="stats-card">
+                <small>НИЙТ ЗАХИАЛГА</small>
+                <div id="total-count">0</div>
+            </div>
+            <button onclick="logout()" style="margin-top: auto; padding: 12px; border: none; background: #fee2e2; color: #ef4444; border-radius: 10px; font-weight: 700; cursor: pointer;">🚪 Гарах</button>
+        </div>
+
+        <div class="admin-main">
+            <div class="header">
+                <h1 style="font-weight: 800; margin: 0;">Захиалгын удирдлага</h1>
+                <div id="admin-name" style="color: #64748b; font-weight: 600;"></div>
+            </div>
+            <div class="orders-grid" id="orders-list"></div>
+        </div>
+    </div>
+
+    <script>
+        // FIREBASE ТОХИРГОО
+        const firebaseConfig = {
+            apiKey: "AIzaSyDpVh6TB0eVPHhoXjDHfxJuMjnkYnvlwRM",
+            authDomain: "joymouth-e0898.firebaseapp.com",
+            projectId: "joymouth-e0898",
+            storageBucket: "joymouth-e0898.firebasestorage.app",
+            messagingSenderId: "716037708846",
+            appId: "1:716037708846:web:22691690cb8f214cfb13bf"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        function adminLogin() {
+            auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
         }
 
-        .logo {
-            font-size: 22px;
-            font-weight: 800;
-            margin-bottom: 40px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        function logout() { auth.signOut(); }
+
+        auth.onAuthStateChanged(user => {
+            const overlay = document.getElementById('login-overlay');
+            const content = document.getElementById('admin-content');
+            if (user) {
+                overlay.style.display = 'none';
+                content.style.display = 'flex';
+                document.getElementById('admin-name').innerText = "Админ: " + user.displayName;
+                startListening();
+            } else {
+                overlay.style.display = 'flex';
+                content.style.display = 'none';
+            }
+        });
+
+        function getStatusColor(status) {
+            switch(status) {
+                case "Шинэ": return { bg: "#fff3e0", text: "#ef6c00", border: "#f39c12" };
+                case "Төлбөр хүлээгдэж байна": return { bg: "#e0f2fe", text: "#0369a1", border: "#3498db" };
+                case "Хүргэгдсэн": return { bg: "#f0fdf4", text: "#15803d", border: "#2ecc71" };
+                default: return { bg: "#f1f5f9", text: "#475569", border: "#cbd5e1" };
+            }
         }
 
-        .stats-box {
-            background: #f8fafc;
-            padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 20px;
+        function startListening() {
+            db.collection("orders").orderBy("createdAt", "desc").onSnapshot(snapshot => {
+                const list = document.getElementById('orders-list');
+                document.getElementById('total-count').innerText = snapshot.size;
+                list.innerHTML = "";
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const style = getStatusColor(data.status);
+                    const time = data.createdAt ? data.createdAt.toDate().toLocaleString() : "Саяхан";
+                    
+                    let itemsHtml = "";
+                    for (const [name, qty] of Object.entries(data.items)) {
+                        itemsHtml += `<li><span>${name}</span> <strong>x${qty}</strong></li>`;
+                    }
+
+                    list.innerHTML += `
+                        <div class="order-card" style="border-top-color: ${style.border}">
+                            <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:15px;">
+                                <div>
+                                    <h3 style="margin:0; font-size:18px;">${data.userName}</h3>
+                                    <small style="color:#94a3b8;">🕒 ${time}</small>
+                                </div>
+                                <span class="status-badge" style="background:${style.bg}; color:${style.text}; border:1px solid ${style.border}40;">${data.status}</span>
+                            </div>
+                            <div style="font-size:13px; color:#64748b; line-height:1.6;">
+                                📍 Хаяг: <strong>${data.address}</strong><br>
+                                📞 Утас: <strong>${data.userPhone}</strong>
+                            </div>
+                            <ul class="order-items">${itemsHtml}</ul>
+                            <div style="text-align:right; font-size:20px; font-weight:800; color:#1e293b; margin-bottom:15px;">
+                                ${data.totalPrice.toLocaleString()}₮
+                            </div>
+                            <select class="status-select" onchange="updateStatus('${doc.id}', this.value)">
+                                <option value="Шинэ" ${data.status === 'Шинэ' ? 'selected' : ''}>Шинэ</option>
+                                <option value="Төлбөр хүлээгдэж байна" ${data.status === 'Төлбөр хүлээгдэж байна' ? 'selected' : ''}>Төлбөр хүлээгдэж байна</option>
+                                <option value="Хүргэгдсэн" ${data.status === 'Хүргэгдсэн' ? 'selected' : ''}>Хүргэгдсэн</option>
+                                <option value="Цуцлагдсан" ${data.status === 'Цуцлагдсан' ? 'selected' : ''}>Цуцлагдсан</option>
+                            </select>
+                        </div>`;
+                });
+            });
         }
 
-        .stats-box small { color: #636e72; font-size: 12px; }
-        .stats-box div { font-size: 24px; font-weight: 800; color: var(--primary); }
-
-        /* Main Area */
-        .admin-main {
-            flex: 1;
-            padding: 40px;
-            overflow-y: auto;
+        function updateStatus(id, status) {
+            db.collection("orders").doc(id).update({ status: status })
+            .then(() => {
+                Swal.fire({ title: 'Шинэчлэгдлээ', icon: 'success', timer: 1000, showConfirmButton: false, toast: true, position: 'top-end' });
+            });
         }
-
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-        }
-
-        /* Orders Grid - 27 инч дээр олон баганаар харагдана */
-        .orders-grid {
-            display: grid;
-            grid-template-
+    </script>
+</body>
+</html>
