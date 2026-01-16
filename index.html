@@ -73,31 +73,45 @@
         <input type="number" id="phone" placeholder="📞 Утасны дугаар">
         <input type="text" id="office" placeholder="📍 Хаяг (Давхар, Өрөө)">
 
-        <div class="bank-section">
-            <div style="font-size: 13px; color: #888; margin-bottom: 8px; font-weight: bold;">ТӨЛБӨР ШИЛЖҮҮЛЭХ:</div>
-            
-            <div class="bank-selector" onclick="toggleBank('state-info')">
-                <div style="display:flex; align-items:center;"><img src="bank-logo-state.png" class="bank-logo"> <strong>Төрийн Банк</strong></div>
-                <span>▼</span>
-            </div>
-            <div id="state-info" class="bank-info">
-                <div class="copy-item" onclick="copyText('610034108801485289', 'Данс хуулагдлаа')">
-                    <div><div style="font-size:14px; font-weight:800;">610034108801485289</div><div style="font-size:12px; color:#666;">А. Хонгорзул</div></div>
-                    <span>Хуулах</span>
+       <div class="bank-selector" onclick="toggleBank('mbank-info')">
+            <img src="bank-logo-mbank.png" class="bank-logo"><strong>М-Банк</strong>
+        </div>
+        <div id="mbank-info" class="bank-info">
+            <div class="copy-item" onclick="copyText('980039008010043724', 'Хуулагдлаа')">
+                <div class="acc-details">
+                    <span class="acc-num">ДАНС: 980039008010043724</span>
+                    <span class="acc-name">Алтан-Очир Хонгорзул</span>
                 </div>
-            </div>
-
-            <div class="bank-selector" onclick="toggleBank('khaan-info')">
-                <div style="display:flex; align-items:center;"><img src="https://m.khanbank.com/assets/images/logo.png" class="bank-logo"> <strong>Хаан Банк</strong></div>
-                <span>▼</span>
-            </div>
-            <div id="khaan-info" class="bank-info">
-                <div class="copy-item" onclick="copyText('5024467261', 'Данс хуулагдлаа')">
-                    <div><div style="font-size:14px; font-weight:800;">5024467261</div><div style="font-size:12px; color:#666;">А. Хонгорзул</div></div>
-                    <span>Хуулах</span>
-                </div>
+                <span class="copy-text">Хуулах</span>
             </div>
         </div>
+
+        <div class="bank-selector" onclick="toggleBank('golomt-info')">
+            <img src="bank-logo-golomt.png" class="bank-logo"><strong>Голомт Банк</strong>
+        </div>
+        <div id="golomt-info" class="bank-info">
+            <div class="copy-item" onclick="copyText('890015001205153549', 'Хуулагдлаа')">
+                <div class="acc-details">
+                    <span class="acc-num">ДАНС: 890015001205153549</span>
+                    <span class="acc-name">Алтан-Очир Хонгорзул</span>
+                </div>
+                <span class="copy-text">Хуулах</span>
+            </div>
+        </div>
+
+        <div class="bank-selector" onclick="toggleBank('state-info')">
+            <img src="bank-logo-state.png" class="bank-logo"><strong>Төрийн Банк</strong>
+        </div>
+        <div id="state-info" class="bank-info">
+            <div class="copy-item" onclick="copyText('610034108801485289', 'Хуулагдлаа')">
+                <div class="acc-details">
+                    <span class="acc-num">ДАНС: 610034108801485289</span>
+                    <span class="acc-name">Алтан-Очир Хонгорзул</span>
+                </div>
+                <span class="copy-text">Хуулах</span>
+            </div>
+        </div>
+
 
         <button class="order-btn-main" onclick="sendOrder()">ЗАХИАЛГА ӨГӨХ</button>
     </div>
@@ -122,3 +136,4 @@
 </script>
 </body>
 </html>
+
