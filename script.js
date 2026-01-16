@@ -4,37 +4,40 @@ const firebaseConfig = {
     projectId: "joymouth-e0898",
     storageBucket: "joymouth-e0898.firebasestorage.app",
     messagingSenderId: "716037708846",
-    appId: "1:716037708846:web:22691690cb8f214cfb13bf",
-    measurementId: "G-0DGDM401SN"
+    appId: "1:716037708846:web:22691690cb8f214cfb13bf"
 };
 
-firebase.initializeApp(firebaseConfig);
+if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
 const auth = firebase.auth();
 const db = firebase.firestore();
 
 let cart = [];
 let total = 0;
 
-const products = [
-    { name: "Бүргер", price: 7000, img: "burger_real.jpg" },
-    { name: "Сэндвич", price: 6500, img: "sandwich_real.jpg" },
-    { name: "Кимбаб", price: 4000, img: "kimbap_real.JPG" },
-    { name: "Чиабатта", price: 8000, img: "ciabatta_real.jpg" }
-];
+const productImages = {
+    "Бүргер": "burger_real.jpg",
+    "Сэндвич": "sandwich_real.jpg",
+    "Кимбаб": "kimbap_real.JPG", 
+    "Чиабатта": "ciabatta_real.jpg"
+};
 
-// Хоолны жагсаалт харуулах
-function renderProducts() {
-    const list = document.getElementById('product-list');
-    if(!list) return;
-    list.innerHTML = products.map(p => `
-        <div class="product-card">
-            <button class="add-btn" onclick="addToCart('${p.name}', ${p.price})">+</button>
-            <img src="${p.img}" onerror="this.src='https://via.placeholder.com/150'">
-            <h3>${p.name}</h3>
-            <div class="price-tag">${p.price.toLocaleString()}₮</div>
-        </div>
-    `).join('');
+function signInWithGoogle() {
+    auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
 }
+
+function logout() { auth.signOut(); }
+
+auth.onAuthStateChanged((user) => {
+    if (user) {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('main-content').style.display = 'block';
+        document.getElementById('user-info').innerText = "👤 " + user.displayName;
+        observeOrderHistory(user.uid); 
+    } else {
+        document.getElementById('login-screen').style.display = 'block';
+        document.getElementById('main-content').style.display = 'none';
+    }
+});
 
 function addToCart(name, price) {
     cart.push({name, price});
@@ -43,77 +46,87 @@ function addToCart(name, price) {
 }
 
 function removeFromCart(name) {
-    const idx = cart.findIndex(i => i.name === name);
-    if(idx > -1) {
-        total -= cart[idx].price;
-        cart.splice(idx, 1);
+    const index = cart.findLastIndex(item => item.name === name);
+    if (index > -1) {
+        total -= cart[index].price;
+        cart.splice(index, 1); 
         updateCartUI();
     }
 }
 
 function updateCartUI() {
-    const container = document.getElementById('cart-items');
-    const counts = {};
-    cart.forEach(i => { counts[i.name] = (counts[i.name] || {p:i.price, c:0}); counts[i.name].c++; });
-    
-    container.innerHTML = Object.entries(counts).map(([name, data]) => `
-        <div class="cart-item">
-            <div style="font-size:14px; font-weight:600;">${name}</div>
-            <div class="qty-control">
-                <button onclick="removeFromCart('${name}')" style="border:none; background:none; cursor:pointer; color:#e74c3c; font-weight:800;">-</button>
-                <span>${data.c}</span>
-                <button onclick="addToCart('${name}', ${data.p})" style="border:none; background:none; cursor:pointer; color:#2ecc71; font-weight:800;">+</button>
+    const list = document.getElementById('cart-items');
+    if (!list) return;
+    list.innerHTML = "";
+
+    const orderedKeys = [];
+    const itemCounts = {};
+
+    cart.forEach(item => {
+        if (!itemCounts[item.name]) { 
+            itemCounts[item.name] = { price: item.price, count: 0 }; 
+            orderedKeys.push(item.name); 
+        }
+        itemCounts[item.name].count++;
+    });
+
+    orderedKeys.forEach(name => {
+        let { price, count } = itemCounts[name];
+        let li = document.createElement('li');
+        li.className = "cart-item-container";
+        li.innerHTML = `
+            <div style="display:flex; align-items:center; gap:10px; flex:1;">
+                <img src="${productImages[name]}" style="width:40px; height:40px; border-radius:8px; object-fit:cover;">
+                <div>
+                    <div style="font-weight:600; font-size:14px;">${name}</div>
+                    <div style="color:#2ecc71; font-weight:bold; font-size:13px;">${(price * count).toLocaleString()}₮</div>
+                </div>
             </div>
-            <div style="font-weight:800;">${(data.p * data.c).toLocaleString()}₮</div>
-        </div>
-    `).join('');
-    
-    document.getElementById('total-price').innerText = total.toLocaleString();
+            <div class="qty-wrapper">
+                <button class="qty-btn minus" onclick="removeFromCart('${name}')">-</button>
+                <span class="qty-num">${count}</span>
+                <button class="qty-btn plus" onclick="addToCart('${name}', ${price})">+</button>
+            </div>`;
+        list.appendChild(li);
+    });
+    document.getElementById('total-price').textContent = total.toLocaleString();
+}
+
+function observeOrderHistory(userId) {
+    db.collection("orders").where("userId", "==", userId).orderBy("createdAt", "desc").limit(5).onSnapshot((snap) => {
+        const historyList = document.getElementById('history-list');
+        if (snap.empty) { historyList.innerHTML = "<small>Түүх хоосон</small>"; return; }
+        historyList.innerHTML = snap.docs.map(doc => {
+            const data = doc.data();
+            const color = data.status === "Шинэ" ? "#f39c12" : "#2ecc71";
+            return `<div style="background:white; padding:10px; border-radius:10px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid ${color};">
+                <div style="font-size:13px;"><b>${data.totalPrice.toLocaleString()}₮</b><br><small>${data.status}</small></div>
+                <small>${data.createdAt?.toDate().toLocaleDateString() || ""}</small>
+            </div>`;
+        }).join('');
+    });
 }
 
 async function sendOrder() {
     const user = auth.currentUser;
     const office = document.getElementById('office').value;
     const phone = document.getElementById('phone').value;
-
-    if (!user) return auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
-    if (cart.length === 0 || !office || !phone) return Swal.fire("Дутуу", "Мэдээллээ бүрэн оруулна уу", "warning");
-
+    if (!user || cart.length === 0 || !office || !phone) return Swal.fire("Дутуу", "Мэдээллээ бүрэн оруулна уу", "warning");
+    
     const itemCounts = {};
-    cart.forEach(i => itemCounts[i.name] = (itemCounts[i.name] || 0) + 1);
+    cart.forEach(item => { itemCounts[item.name] = (itemCounts[item.name] || 0) + 1; });
 
     try {
         await db.collection("orders").add({
-            userId: user.uid, userName: user.displayName, userPhone: phone,
-            address: office, items: itemCounts, totalPrice: total,
-            status: "Шинэ", createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            userId: user.uid, userName: user.displayName, userPhone: phone, address: office,
+            items: itemCounts, totalPrice: total, status: "Шинэ", createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         cart = []; total = 0; updateCartUI();
-        Swal.fire("Амжилттай", "Захиалга илгээгдлээ!", "success");
+        Swal.fire("Амжилттай!", "Захиалгыг хүлээн авлаа.", "success");
     } catch (e) { Swal.fire("Алдаа", e.message, "error"); }
 }
 
 function copyText(text, msg) {
     navigator.clipboard.writeText(text);
-    Swal.fire({ title: msg, icon: 'success', timer: 1000, showConfirmButton: false, toast: true, position: 'top-end' });
-}
-
-auth.onAuthStateChanged(user => {
-    renderProducts();
-    if(user) {
-        db.collection("orders").where("userId", "==", user.uid).orderBy("createdAt", "desc").limit(5).onSnapshot(snap => {
-            document.getElementById('history-list').innerHTML = snap.docs.map(doc => {
-                const d = doc.data();
-                return `<div class="history-item" style="border-left-color:${getStatusColor(d.status)}">
-                    <div><b>${d.createdAt?.toDate().toLocaleDateString()}</b><br><small>${d.totalPrice.toLocaleString()}₮</small></div>
-                    <span style="color:${getStatusColor(d.status)}; font-size:11px; font-weight:800;">${d.status}</span>
-                </div>`;
-            }).join('');
-        });
-    }
-});
-
-function getStatusColor(s) {
-    const colors = { "Шинэ": "#f39c12", "Бэлтгэгдэж байна": "#9b59b6", "Хүргэлтэнд гарсан": "#e67e22", "Хүргэгдсэн": "#2ecc71", "Цуцлагдсан": "#e74c3c" };
-    return colors[s] || "#95a5a6";
+    Swal.fire({ title: msg, icon: 'success', timer: 1000, showConfirmButton: false, toast: true, position: 'top' });
 }
