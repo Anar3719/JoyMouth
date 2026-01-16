@@ -3,92 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Joy Mouth - Premium Order</title>
+    <title>Joy Mouth - Order</title>
     <link rel="icon" type="image/png" href="headlogo.png">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #2ecc71; --secondary: #27ae60; --dark: #2d3436; --glass: rgba(255, 255, 255, 0.95); }
         body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background: #f0f2f5; 
-            margin: 0; padding: 20px;
-            background-image: linear-gradient(135deg, rgba(240, 242, 245, 0.9), rgba(240, 242, 245, 0.9)), url('LOGO.PNG');
-            background-attachment: fixed; background-position: center; background-repeat: no-repeat; background-size: 400px;
+            font-family: 'Segoe UI', sans-serif; 
+            background: #f4f7f6; 
+            padding: 20px; 
+            background-image: linear-gradient(rgba(244, 247, 246, 0.94), rgba(244, 247, 246, 0.94)), url('LOGO.PNG');
+            background-attachment: fixed; background-position: center; background-repeat: no-repeat; background-size: 300px;
         }
-        .container { max-width: 480px; margin: auto; background: var(--glass); padding: 25px; border-radius: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.08); backdrop-filter: blur(10px); }
-        .logo-container { text-align: center; margin-bottom: 25px; }
-        .logo-container img { width: 100px; filter: drop-shadow(0 5px 15px rgba(0,0,0,0.1)); }
+        .container { max-width: 450px; margin: auto; background: rgba(255, 255, 255, 0.98); padding: 25px; border-radius: 24px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); }
+        .logo-container { text-align: center; margin-bottom: 15px; }
+        .logo-container img { width: 100%; max-width: 250px; border-radius: 20px; border: 2px solid #5d4037; }
         
-        .product-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
-        .product-card { background: white; border-radius: 20px; padding: 12px; text-align: center; transition: 0.3s; border: 1px solid #f0f0f0; position: relative; }
-        .product-card:active { transform: scale(0.95); }
-        .product-card img { width: 100%; height: 110px; object-fit: cover; border-radius: 15px; margin-bottom: 10px; }
-        .product-card h3 { margin: 5px 0; font-size: 15px; color: var(--dark); }
-        .price-tag { color: var(--primary); font-weight: 800; font-size: 14px; }
-        .add-btn { background: var(--primary); color: white; border: none; width: 32px; height: 32px; border-radius: 10px; cursor: pointer; font-weight: bold; position: absolute; top: 10px; right: 10px; box-shadow: 0 4px 10px rgba(46, 204, 113, 0.3); }
-
-        .cart-section { background: #f8fafc; border-radius: 20px; padding: 15px; margin-bottom: 20px; border: 1px dashed #cbd5e1; }
-        .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #edf2f7; }
-        .qty-control { display: flex; align-items: center; gap: 10px; background: white; padding: 4px 10px; border-radius: 10px; }
+        .item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #eee; }
+        .add-btn { cursor: pointer; background: #5d4037; color: white; border: none; padding: 10px 18px; border-radius: 12px; font-weight: 600; }
         
-        .input-group { margin-bottom: 15px; }
-        input { width: 100%; padding: 14px; border-radius: 15px; border: 1.5px solid #e2e8f0; font-family: inherit; font-size: 14px; transition: 0.3s; box-sizing: border-box; }
-        input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(46, 204, 113, 0.1); }
-        
-        .bank-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 20px; padding: 15px; margin-bottom: 20px; }
-        .copy-item { display: flex; justify-content: space-between; align-items: center; cursor: pointer; padding: 10px; border-radius: 12px; transition: 0.2s; }
-        .copy-item:hover { background: #f0fdf4; }
+        /* Сагсны товчлуурын загвар */
+        .qty-wrapper { display: flex; align-items: center; background: #f1f2f6; border-radius: 12px; padding: 4px; gap: 8px; }
+        .qty-btn { width: 32px; height: 32px; border-radius: 8px; border: none; font-size: 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .qty-btn.minus { background: #fff; color: #ff7675; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .qty-btn.plus { background: #2ecc71; color: white; }
+        .qty-num { font-weight: 800; min-width: 24px; text-align: center; font-size: 15px; }
+        .cart-item-container { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
 
-        .order-btn-main { width: 100%; padding: 18px; background: var(--primary); color: white; border: none; border-radius: 18px; font-weight: 800; font-size: 16px; cursor: pointer; box-shadow: 0 10px 20px rgba(46, 204, 113, 0.2); transition: 0.3s; }
-        .order-btn-main:hover { background: var(--secondary); transform: translateY(-2px); }
+        input { width: 100%; padding: 14px; margin: 8px 0; border: 1.5px solid #ddd; border-radius: 12px; box-sizing: border-box; font-size: 15px; }
+        .order-btn-main { width: 100%; padding: 18px; border: none; border-radius: 16px; background: #2ecc71; color: white; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 20px; box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3); }
 
-        #history-list { margin-top: 20px; }
-        .history-item { background: white; padding: 15px; border-radius: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid #ddd; }
+        /* Банкны хэсэг */
+        .bank-section { margin-top: 20px; border: 1px solid #eee; border-radius: 15px; padding: 10px; background: #fdfdfd; }
+        .bank-selector { padding: 12px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; background: white; border: 1px solid #f0f0f0; transition: 0.2s; }
+        .bank-selector:hover { background: #f9f9f9; }
+        .bank-logo { width: 25px; height: 25px; object-fit: contain; margin-right: 10px; }
+        .bank-info { display: none; padding: 10px; background: #fff9f5; border-radius: 10px; border: 1px dashed #eecfb8; margin-bottom: 10px; }
+        .copy-item { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .copy-item span { color: #0088cc; font-size: 12px; font-weight: bold; text-transform: uppercase; }
+
+        #history-list { margin-top: 15px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="logo-container">
-        <img src="headlogo.png" alt="Logo">
-        <h2 style="margin: 10px 0 0 0; font-weight: 800; color: var(--dark);">Joy Mouth</h2>
-        <p style="color: #64748b; font-size: 13px; margin-top: 5px;">Амттай бөгөөд чанартай</p>
+<div id="login-screen" class="container">
+    <div class="logo-container"><img src="LOGO.PNG"></div>
+    <h1 style="text-align:center; color:#5d4037;">Joy Mouth</h1>
+    <button style="width:100%; padding:15px; border-radius:12px; border:1px solid #ddd; background:white; font-weight:bold; cursor:pointer;" onclick="signInWithGoogle()">Google-ээр нэвтрэх</button>
+</div>
+
+<div id="main-content" class="container" style="display:none;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+        <span id="user-info" style="font-weight: bold; color: #5d4037;">👤 ...</span>
+        <button onclick="logout()" style="color: #e74c3c; border: none; background: none; cursor: pointer; font-weight: bold;">Гарах</button>
     </div>
 
-    <div class="product-grid" id="product-list"></div>
-
-    <div class="cart-section">
-        <h4 style="margin-top: 0; display: flex; align-items: center; gap: 8px;">🛒 Таны сагс</h4>
-        <div id="cart-items"></div>
-        <div style="display: flex; justify-content: space-between; margin-top: 15px; font-weight: 800; font-size: 18px;">
-            <span>Нийт:</span>
-            <span style="color: var(--primary);"><span id="total-price">0</span>₮</span>
-        </div>
+    <div id="menu">
+        <div class="item"><span>🍔 Бүргер - 7,000₮</span><button class="add-btn" onclick="addToCart('Бүргер', 7000)">Нэмэх</button></div>
+        <div class="item"><span>🥪 Сэндвич - 6,500₮</span><button class="add-btn" onclick="addToCart('Сэндвич', 6500)">Нэмэх</button></div>
+        <div class="item"><span>🍱 Кимбаб - 4,000₮</span><button class="add-btn" onclick="addToCart('Кимбаб', 4000)">Нэмэх</button></div>
+        <div class="item"><span>🥐 Чиабатта - 8,000₮</span><button class="add-btn" onclick="addToCart('Чиабатта', 8000)">Нэмэх</button></div>
     </div>
 
-    <div class="input-group">
-        <input type="text" id="office" placeholder="📍 Хаяг (Давхар, өрөө)">
-    </div>
-    <div class="input-group">
+    <div id="cart" style="margin-top:30px;">
+        <h3 style="border-bottom: 2px solid #5d4037; padding-bottom: 5px;">🛒 Таны сагс</h3>
+        <ul id="cart-items" style="list-style: none; padding: 0;"></ul>
+        <p style="font-size: 20px; text-align: right;"><strong>Нийт: <span id="total-price">0</span>₮</strong></p>
+        
         <input type="number" id="phone" placeholder="📞 Утасны дугаар">
-    </div>
+        <input type="text" id="office" placeholder="📍 Хаяг (Давхар, Өрөө)">
 
-    <div class="bank-card">
-        <div style="font-size: 12px; color: #64748b; margin-bottom: 10px; font-weight: 600;">ТӨЛБӨР ШИЛЖҮҮЛЭХ</div>
-        <div class="copy-item" onclick="copyText('610034108801485289', 'Данс хуулагдлаа')">
-            <div>
-                <div style="font-size: 14px; font-weight: 800;">610034108801485289</div>
-                <div style="font-size: 12px; color: #64748b;">А. Хонгорзул (Төрийн банк)</div>
+        <div class="bank-section">
+            <div style="font-size: 13px; color: #888; margin-bottom: 8px; font-weight: bold;">ТӨЛБӨР ШИЛЖҮҮЛЭХ:</div>
+            
+            <div class="bank-selector" onclick="toggleBank('state-info')">
+                <div style="display:flex; align-items:center;"><img src="bank-logo-state.png" class="bank-logo"> <strong>Төрийн Банк</strong></div>
+                <span>▼</span>
             </div>
-            <span style="color: var(--primary); font-size: 12px; font-weight: 800;">ХУУЛАХ</span>
+            <div id="state-info" class="bank-info">
+                <div class="copy-item" onclick="copyText('610034108801485289', 'Данс хуулагдлаа')">
+                    <div><div style="font-size:14px; font-weight:800;">610034108801485289</div><div style="font-size:12px; color:#666;">А. Хонгорзул</div></div>
+                    <span>Хуулах</span>
+                </div>
+            </div>
+
+            <div class="bank-selector" onclick="toggleBank('khaan-info')">
+                <div style="display:flex; align-items:center;"><img src="https://m.khanbank.com/assets/images/logo.png" class="bank-logo"> <strong>Хаан Банк</strong></div>
+                <span>▼</span>
+            </div>
+            <div id="khaan-info" class="bank-info">
+                <div class="copy-item" onclick="copyText('5024467261', 'Данс хуулагдлаа')">
+                    <div><div style="font-size:14px; font-weight:800;">5024467261</div><div style="font-size:12px; color:#666;">А. Хонгорзул</div></div>
+                    <span>Хуулах</span>
+                </div>
+            </div>
         </div>
+
+        <button class="order-btn-main" onclick="sendOrder()">ЗАХИАЛГА ӨГӨХ</button>
     </div>
 
-    <button class="order-btn-main" onclick="sendOrder()">ЗАХИАЛГА ИЛГЭЭХ</button>
-
-    <div id="order-history">
-        <h4 style="margin-bottom: 15px;">🕒 Захиалгын түүх</h4>
+    <div style="margin-top:30px;">
+        <h3 style="font-size: 16px;">🕒 Сүүлийн захиалгууд</h3>
         <div id="history-list"></div>
     </div>
 </div>
@@ -97,5 +112,13 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <script src="script.js"></script>
+<script>
+    function toggleBank(id) {
+        const info = document.getElementById(id);
+        const allInfo = document.querySelectorAll('.bank-info');
+        allInfo.forEach(el => { if(el.id !== id) el.style.display = 'none'; });
+        info.style.display = (info.style.display === 'block') ? 'none' : 'block';
+    }
+</script>
 </body>
 </html>
