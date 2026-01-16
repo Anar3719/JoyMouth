@@ -17,15 +17,26 @@
         .items-list { background: #f8fafc; padding: 15px; border-radius: 15px; margin: 15px 0; }
         .total { font-size: 22px; font-weight: 800; color: var(--primary); text-align: right; }
         select { width: 100%; padding: 12px; border-radius: 12px; border: 1.5px solid #e2e8f0; font-family: inherit; font-weight: 600; cursor: pointer; }
+        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; }
+        button.login-btn { padding: 15px 30px; font-size: 16px; font-weight: 800; background: #4285F4; color: white; border: none; border-radius: 12px; cursor: pointer; }
     </style>
 </head>
 <body>
+
+<div id="login-overlay" style="display: none;">
+    <h2>Joy Mouth Admin</h2>
+    <p>Админ эрхээр нэвтэрнэ үү</p>
+    <button class="login-btn" onclick="adminLogin()">Google-ээр нэвтрэх</button>
+</div>
 
 <audio id="orderSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
 
 <div class="header">
     <h1 style="margin: 0; font-weight: 800;">👨‍🍳 Joy Mouth Admin</h1>
-    <div id="stats" style="font-weight: 800; color: var(--primary); background: #f0fdf4; padding: 10px 20px; border-radius: 15px;">Нийт: <span id="count">0</span></div>
+    <div id="stats" style="font-weight: 800; color: var(--primary); background: #f0fdf4; padding: 10px 20px; border-radius: 15px;">
+        Нийт: <span id="count">0</span>
+        <button onclick="firebase.auth().signOut()" style="margin-left: 10px; border: none; background: none; cursor: pointer; font-size: 12px; color: #666;">Гарах</button>
+    </div>
 </div>
 
 <div class="grid" id="admin-orders"></div>
@@ -33,6 +44,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
 <script>
     const firebaseConfig = {
         apiKey: "AIzaSyDpVh6TB0eVPHhoXjDHfxJuMjnkYnvlwRM",
@@ -44,57 +56,88 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+    const auth = firebase.auth();
     let firstLoad = true;
 
-    db.collection("orders").orderBy("createdAt", "desc").onSnapshot(snapshot => {
-        const list = document.getElementById('admin-orders');
-        document.getElementById('count').innerText = snapshot.size;
-        
-        if (!firstLoad && snapshot.docChanges().some(c => c.type === "added")) {
-            document.getElementById('orderSound').play();
+    // Нэвтрэлтийн төлөв хянах
+    auth.onAuthStateChanged(user => {
+        if (user && user.email === "g.anar1202@gmail.com") {
+            document.getElementById('login-overlay').style.display = 'none';
+            startListening();
+        } else {
+            document.getElementById('login-overlay').style.display = 'flex';
+            if (user) {
+                Swal.fire("Админ биш", `${user.email} хаяг админ эрхгүй байна.`, "error");
+                auth.signOut();
+            }
         }
-        firstLoad = false;
-
-        list.innerHTML = "";
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            const card = document.createElement('div');
-            card.className = `order-card ${data.status === 'Шинэ' ? 'new-order' : ''}`;
-            
-            let itemsHtml = Object.entries(data.items).map(([n, q]) => `<div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:5px;"><span>${n}</span> <b>x${q}</b></div>`).join('');
-            
-            card.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:start;">
-                    <div>
-                        <div style="font-weight:800; font-size:16px;">${data.userName}</div>
-                        <div style="font-size:12px; color:#64748b;">🕒 ${data.createdAt?.toDate().toLocaleTimeString()}</div>
-                    </div>
-                    <span class="status-badge" style="background:${getStatusColor(data.status)}; color:white;">${data.status}</span>
-                </div>
-                <div style="margin: 15px 0; font-size:13px;">📍 ${data.address} <br> 📞 ${data.userPhone}</div>
-                <div class="items-list">${itemsHtml}</div>
-                <div class="total">${data.totalPrice.toLocaleString()}₮</div>
-                <div style="margin-top:15px;">
-                    <select onchange="updateStatus('${doc.id}', this.value)">
-                        <option value="Шинэ" ${data.status === 'Шинэ' ? 'selected' : ''}>Шинэ</option>
-                        <option value="Бэлтгэгдэж байна" ${data.status === 'Бэлтгэгдэж байна' ? 'selected' : ''}>Бэлтгэгдэж байна</option>
-                        <option value="Хүргэлтэнд гарсан" ${data.status === 'Хүргэлтэнд гарсан' ? 'selected' : ''}>Хүргэлтэнд гарсан</option>
-                        <option value="Хүргэгдсэн" ${data.status === 'Хүргэгдсэн' ? 'selected' : ''}>Хүргэгдсэн</option>
-                        <option value="Цуцлагдсан" ${data.status === 'Цуцлагдсан' ? 'selected' : ''}>Цуцлагдсан</option>
-                    </select>
-                </div>
-            `;
-            list.appendChild(card);
-        });
     });
 
+    function adminLogin() {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider);
+    }
+
+    function startListening() {
+        db.collection("orders").orderBy("createdAt", "desc").onSnapshot(snapshot => {
+            const list = document.getElementById('admin-orders');
+            document.getElementById('count').innerText = snapshot.size;
+            
+            if (!firstLoad && snapshot.docChanges().some(c => c.type === "added")) {
+                document.getElementById('orderSound').play();
+            }
+            firstLoad = false;
+
+            list.innerHTML = "";
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                const card = document.createElement('div');
+                card.className = `order-card ${data.status === 'Шинэ' ? 'new-order' : ''}`;
+                
+                let itemsHtml = Object.entries(data.items).map(([n, q]) => 
+                    `<div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:5px;"><span>${n}</span> <b>x${q}</b></div>`
+                ).join('');
+                
+                card.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:start;">
+                        <div>
+                            <div style="font-weight:800; font-size:16px;">${data.userName}</div>
+                            <div style="font-size:12px; color:#64748b;">🕒 ${data.createdAt?.toDate().toLocaleTimeString()}</div>
+                        </div>
+                        <span class="status-badge" style="background:${getStatusColor(data.status)}; color:white;">${data.status}</span>
+                    </div>
+                    <div style="margin: 15px 0; font-size:13px;">📍 ${data.address} <br> 📞 ${data.userPhone}</div>
+                    <div class="items-list">${itemsHtml}</div>
+                    <div class="total">${(data.totalPrice || 0).toLocaleString()}₮</div>
+                    <div style="margin-top:15px;">
+                        <select onchange="updateStatus('${doc.id}', this.value)">
+                            <option value="Шинэ" ${data.status === 'Шинэ' ? 'selected' : ''}>Шинэ</option>
+                            <option value="Төлбөр хүлээгдэж байна" ${data.status === 'Төлбөр хүлээгдэж байна' ? 'selected' : ''}>Төлбөр хүлээгдэж байна</option>
+                            <option value="Бэлтгэгдэж байна" ${data.status === 'Бэлтгэгдэж байна' ? 'selected' : ''}>Бэлтгэгдэж байна</option>
+                            <option value="Хүргэлтэнд гарсан" ${data.status === 'Хүргэлтэнд гарсан' ? 'selected' : ''}>Хүргэлтэнд гарсан</option>
+                            <option value="Хүргэгдсэн" ${data.status === 'Хүргэгдсэн' ? 'selected' : ''}>Хүргэгдсэн</option>
+                            <option value="Цуцлагдсан" ${data.status === 'Цуцлагдсан' ? 'selected' : ''}>Цуцлагдсан</option>
+                        </select>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }, (error) => {
+            console.error("Firestore Error:", error);
+            if (error.code === 'permission-denied') {
+                Swal.fire("Эрхгүй эсвэл Индекс үүсээгүй", "Console (F12) дэх линк дээр дарж Индекс үүсгэнэ үү.", "warning");
+            }
+        });
+    }
+
     function getStatusColor(s) {
-        const colors = { "Шинэ": "#f39c12", "Бэлтгэгдэж байна": "#9b59b6", "Хүргэлтэнд гарсан": "#e67e22", "Хүргэгдсэн": "#2ecc71", "Цуцлагдсан": "#e74c3c" };
+        const colors = { "Шинэ": "#f39c12", "Бэлтгэгдэж байна": "#9b59b6", "Хүргэлтэнд гарсан": "#e67e22", "Хүргэгдсэн": "#2ecc71", "Цуцлагдсан": "#e74c3c", "Төлбөр хүлээгдэж байна": "#3498db" };
         return colors[s] || "#95a5a6";
     }
 
     function updateStatus(id, s) {
-        db.collection("orders").doc(id).update({ status: s });
+        db.collection("orders").doc(id).update({ status: s })
+            .then(() => Swal.fire({ title: 'Төлөв шинэчлэгдлээ', icon: 'success', timer: 1000, showConfirmButton: false, toast: true, position: 'top-end' }));
     }
 </script>
 </body>
