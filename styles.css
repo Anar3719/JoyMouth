@@ -86,7 +86,7 @@ h1 { font-size: clamp(39px, 5.15vw, 69px); letter-spacing: -.035em; }
 
 .shop { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, .49fr); gap: 30px; margin-block: 38px 46px; align-items: start; }
 #menu, #cart, #order-history { scroll-margin-top: 18px; }
-#menu h2, #order-history h2 { font-size: clamp(27px, 4vw, 37px); margin-bottom: 20px; }
+#menu h2 { font-size: clamp(27px, 4vw, 37px); margin-bottom: 20px; }
 .products { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 .product, .cart-panel { background: var(--white); border: 1px solid var(--line); border-radius: 16px; }
 .product { overflow: hidden; }
@@ -134,10 +134,52 @@ input { width: 100%; min-height: 44px; padding: 8px 10px; margin-top: 4px; borde
 .bank-body .button { justify-self: start; }
 #place-order { width: 100%; margin-top: 14px; }
 
-#order-history { margin-bottom: 42px; }
-.history-list { display: grid; gap: 8px; }
-.history-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; width: 100%; text-align: left; background: var(--white); }
-.order-status { background: #e8efe7; color: var(--green); border-radius: 6px; padding: 4px 7px; }
+#order-history { max-width: 900px; margin-bottom: 42px; }
+#history-title { margin-bottom: 14px; font: 800 clamp(22px, 3.2vw, 30px)/1.2 "Inter", system-ui, sans-serif; }
+.history-panel { overflow: hidden; border: 1px solid var(--line); border-radius: 14px; background: var(--white); }
+.history-panel table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.history-amount-col { width: 26%; }
+.history-status-col { width: 36%; }
+.history-action-col { width: 58px; }
+.history-panel th, .history-panel td { padding: 9px 16px; text-align: left; }
+.history-panel th { background: #eeefe7; color: var(--muted); font-size: 12px; font-weight: 800; }
+.history-panel td { border-top: 1px solid var(--line); }
+.history-row { cursor: pointer; }
+.history-row:hover, .history-row:focus-within { background: #f4f6ef; }
+.history-date, .history-amount { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.history-panel .history-amount { text-align: right; font-weight: 800; }
+.history-panel .history-status { padding-left: 22px; }
+.history-panel th:nth-child(3) { padding-left: 22px; }
+.history-panel .history-action { padding: 4px 9px 4px 0; text-align: right; }
+.order-status {
+    display: inline-block;
+    padding: 4px 9px;
+    border-radius: 6px;
+    background: #eceee9;
+    color: #49544c;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.25;
+}
+.order-status[data-status="new"] { background: #e8eef9; color: #2b497b; }
+.order-status[data-status="pending"] { background: #f7ebce; color: #664800; }
+.order-status[data-status="preparing"] { background: #eee8f8; color: #563a77; }
+.order-status[data-status="shipping"] { background: #e0efed; color: #155b54; }
+.order-status[data-status="delivered"] { background: #e3efe2; color: #245433; }
+.order-status[data-status="cancelled"] { background: #f8e7e4; color: #853732; }
+.history-detail {
+    width: 44px;
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--green);
+    font-size: 24px;
+    line-height: 1;
+}
+.history-detail:hover { background: #e9eee5; }
+
 .site-footer { border-top: 1px solid var(--line); color: var(--muted); padding-block: 22px; }
 .mobile-cart { display: none; }
 dialog { width: min(480px, calc(100% - 30px)); max-height: 90dvh; padding: 20px; border: 1px solid var(--line); border-radius: 16px; background: var(--white); color: var(--ink); }
@@ -171,5 +213,16 @@ dialog::backdrop { background: #14291fc4; }
     .product-info h3 { font-size: 15px; }
     .product-info .button { width: 100%; }
     .cart-panel { padding: 16px; }
+    .history-date-col { width: 80px; }
+    .history-amount-col { width: 65px; }
+    .history-status-col { width: auto; }
+    .history-action-col { width: 44px; }
+    .history-panel th, .history-panel td { padding: 8px; font-size: 12px; }
+    .history-panel .history-date { font-size: 11px; }
+    .history-panel .history-amount { padding-right: 5px; }
+    .history-panel th:nth-child(3), .history-panel .history-status { padding-left: 4px; padding-right: 0; }
+    .history-panel .history-action { padding: 3px 0; }
+    .order-status { padding: 4px; font-size: 11px; overflow-wrap: anywhere; }
+    .history-detail:focus-visible { outline-offset: -3px; }
 }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
