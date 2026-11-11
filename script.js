@@ -8,200 +8,336 @@ const firebaseConfig = {
     measurementId: "G-0DGDM401SN"
 };
 
-if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
-const auth = firebase.auth();
-const db = firebase.firestore();
+const products = [
+    { name: 'Бүргер', price: 7500, image: 'burger_real.jpg', fit: 'contain' },
+    { name: 'Сэндвич', price: 6500, image: 'sandwich_real.jpg' },
+    { name: 'Кимбаб', price: 4500, image: 'kimbap_real.JPG', fit: 'contain' },
+    { name: 'Чиабатта', price: 8000, image: 'ciabatta_real.jpg' },
+];
 
-let cart = [];
-let total = 0;
+const banks = [
+    { name: 'М-Банк', image: 'bank-logo-mbank.png', account: '9800 3900 8010 0437 24' },
+    { name: 'Голомт Банк', image: 'bank-logo-golomt.png', account: '8900 1500 1205 1535 49' },
+    { name: 'Төрийн Банк', image: 'bank-logo-state.png', account: '6100 3410 8801 4852 89' },
+];
 
-// Бүтээгдэхүүний зургийн сан
-const productImages = {
-    "Бүргер": "burger_real.jpg",
-    "Сэндвич": "sandwich_real.jpg",
-    "Кимбаб": "kimbap_real.JPG", 
-    "Чиабатта": "ciabatta_real.jpg"
-};
+const $ = (id) => document.getElementById(id);
+const money = (amount) => new Intl.NumberFormat('en-US').format(amount) + '₮';
+const cart = new Map();
+let auth;
+let db;
+let activeUser = null;
+let authReady = false;
+let signingIn = false;
+let sendingOrder = false;
+let stopHistory = null;
 
-// Төлөвийн өнгө тодорхойлох
-function getStatusColor(status) {
-    switch(status) {
-        case "Шинэ": return "#f39c12";
-        case "Төлбөр хүлээгдэж байна": return "#3498db";
-        case "Бэлтгэгдэж байна": return "#9b59b6";
-        case "Хүргэлтэнд гарсан": return "#e67e22";
-        case "Хүргэгдсэн": return "#2ecc71";
-        case "Цуцлагдсан": return "#e74c3c";
-        default: return "#95a5a6";
+function element(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+}
+
+function button(label, className, onClick) {
+    const node = element('button', className, label);
+    node.type = 'button';
+    node.addEventListener('click', onClick);
+    return node;
+}
+
+function photo(src, alt = '') {
+    const image = element('img');
+    image.src = src;
+    image.alt = alt;
+    return image;
+}
+
+function openDetails(title, body) {
+    $('dialog-title').textContent = title;
+    $('dialog-body').replaceChildren(body);
+    $('detail-dialog').showModal();
+}
+
+function renderMenu() {
+    for (const product of products) {
+        const card = element('article', 'product');
+        const image = photo(product.image, product.name);
+        if (product.fit) image.dataset.fit = product.fit;
+
+        const view = button('', 'product-photo', () => {
+            openDetails(product.name, photo(product.image, product.name));
+        });
+        view.setAttribute('aria-label', product.name + ' зураг харах');
+        view.append(image);
+
+        const info = element('div', 'product-info');
+        const label = element('div');
+        label.append(element('h3', '', product.name), element('p', 'product-price', money(product.price)));
+        const add = button('+ Нэмэх', 'button button-outline', () => changeQuantity(product, 1));
+        add.setAttribute('aria-label', product.name + ' сагсанд нэмэх');
+        info.append(label, add);
+        card.append(view, info);
+        $('products').append(card);
     }
 }
 
-// Нэвтрэх функц
-function signInWithGoogle() {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithPopup(provider).catch((err) => alert("Алдаа: " + err.message));
+function renderBanks() {
+    for (const bank of banks) {
+        const details = element('details', 'bank');
+        details.setAttribute('name', 'payment-bank');
+        const summary = element('summary');
+        summary.append(photo(bank.image), document.createTextNode(bank.name));
+        const body = element('div', 'bank-body');
+        const copy = button('Дугаар хуулах', 'button button-outline', async () => {
+            try {
+                await navigator.clipboard.writeText(bank.account.replaceAll(' ', ''));
+                setMessage(bank.name + ' дансны дугаар хуулагдлаа.');
+            } catch {
+                setMessage('Дансны дугаарыг гараар хуулна уу.', true);
+            }
+        });
+        body.append(
+            element('strong', 'account-number', bank.account),
+            element('span', 'muted', 'Алтан-Очир Хонгорзул'),
+            copy,
+        );
+        details.append(summary, body);
+        $('banks').append(details);
+    }
 }
 
-function logout() { auth.signOut(); }
+function changeQuantity(product, change, restoreFocus = false) {
+    if (sendingOrder) return;
+    const count = (cart.get(product) || 0) + change;
+    if (count > 0) cart.set(product, count);
+    else cart.delete(product);
+    setMessage('');
+    renderCart();
+    $('cart-announcement').textContent = product.name + ' · Сагсанд ' + Math.max(0, count) + ' ширхэг';
+    if (restoreFocus) {
+        const cartControl = $('cart-items').querySelector(
+            '[data-product="' + product.image + '"][data-change="' + change + '"]',
+        );
+        const menuControl = Array.from($('products').children)[products.indexOf(product)].querySelector('.product-info button');
+        (cartControl || menuControl).focus();
+    }
+}
 
-// Хэрэглэгчийн төлөв хянах
-auth.onAuthStateChanged((user) => {
-    if (user) {
-        document.getElementById('login-screen').style.display = 'none';
-        document.getElementById('main-content').style.display = 'block';
-        document.getElementById('user-info').innerText = "👤 " + user.displayName;
-        observeOrderHistory(user.uid); 
-    } else {
-        document.getElementById('login-screen').style.display = 'block';
-        document.getElementById('main-content').style.display = 'none';
+function cartTotals() {
+    let quantity = 0;
+    let amount = 0;
+    for (const [product, count] of cart) {
+        quantity += count;
+        amount += product.price * count;
+    }
+    return { quantity, amount };
+}
+
+function renderCart() {
+    const rows = [];
+    for (const [product, count] of cart) {
+        const row = element('li', 'cart-row');
+        const item = element('div', 'cart-product');
+        const info = element('div');
+        info.append(element('strong', '', product.name), element('small', '', money(product.price * count)));
+        item.append(photo(product.image), info);
+
+        const controls = element('div', 'quantity');
+        const minus = quantityButton(product, -1);
+        const plus = quantityButton(product, 1);
+        controls.append(minus, element('span', '', count), plus);
+        row.append(item, controls);
+        rows.push(row);
+    }
+
+    $('cart-items').replaceChildren(...rows);
+    const { quantity, amount } = cartTotals();
+    $('cart-count').textContent = quantity;
+    $('total-price').textContent = money(amount);
+    $('mobile-total').textContent = money(amount);
+    $('mobile-cart').hidden = !quantity;
+    $('cart-empty').hidden = Boolean(quantity);
+    $('checkout').hidden = !quantity;
+    syncCheckout();
+}
+
+function quantityButton(product, change) {
+    const decrease = change < 0;
+    const control = button(decrease ? '−' : '+', 'button button-outline', () => {
+        changeQuantity(product, change, true);
+    });
+    control.dataset.product = product.image;
+    control.dataset.change = change;
+    control.setAttribute('aria-label', product.name + (decrease ? ' хасах' : ' нэмэх'));
+    return control;
+}
+
+function setMessage(text, error = false) {
+    $('cart-message').textContent = text;
+    $('cart-message').dataset.error = error;
+}
+
+function syncCheckout() {
+    $('checkout').noValidate = !activeUser;
+    $('checkout-fields').disabled = sendingOrder;
+    $('place-order').disabled = !authReady || signingIn || sendingOrder;
+    $('place-order').textContent = sendingOrder ? 'Илгээж байна…' : activeUser ? 'Захиалга өгөх' : 'Google-ээр нэвтэрч үргэлжлүүлэх';
+    $('sign-in').disabled = !authReady || signingIn;
+    $('sign-out').disabled = sendingOrder;
+    $('cart-items').querySelectorAll('button').forEach((control) => { control.disabled = sendingOrder; });
+    $('products').querySelectorAll('.product-info button').forEach((control) => { control.disabled = sendingOrder; });
+}
+
+async function signIn() {
+    if (!authReady || signingIn) return;
+    signingIn = true;
+    setMessage('');
+    $('auth-message').textContent = '';
+    syncCheckout();
+    try {
+        await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+        if (cart.size) setMessage('Хүргэлтийн мэдээллээ бөглөөд захиалгаа илгээнэ үү.');
+    } catch {
+        const message = 'Google-ээр нэвтэрч чадсангүй. Дахин оролдоно уу.';
+        if (document.activeElement === $('sign-in') || !cart.size) {
+            $('auth-message').textContent = message;
+            $('auth-message').dataset.error = true;
+        } else setMessage(message, true);
+    } finally {
+        signingIn = false;
+        syncCheckout();
+    }
+}
+
+function observeHistory(userId) {
+    const history = $('history-list');
+    history.replaceChildren(element('p', 'empty', 'Ачаалж байна…'));
+    return db.collection('orders').where('userId', '==', userId).orderBy('createdAt', 'desc').limit(10)
+        .onSnapshot((snapshot) => {
+            if (activeUser?.uid !== userId) return;
+            if (snapshot.empty) {
+                history.replaceChildren(element('p', 'empty', 'Одоогоор захиалга байхгүй.'));
+                return;
+            }
+            const rows = snapshot.docs.map((document) => {
+                const order = document.data();
+                const date = order.createdAt?.toDate().toLocaleDateString('mn-MN') || 'Саяхан';
+                const row = button('', 'button button-outline history-row', () => showOrder(order));
+                row.append(element('strong', '', date), element('span', '', money(order.totalPrice || 0)),
+                    element('span', 'order-status', order.status || 'Шинэ'));
+                return row;
+            });
+            history.replaceChildren(...rows);
+        }, () => {
+            if (activeUser?.uid === userId) history.replaceChildren(element('p', 'empty', 'Захиалгын түүхийг ачаалж чадсангүй.'));
+        });
+}
+
+function showOrder(order) {
+    const details = element('div');
+    const items = element('ul');
+    for (const [name, count] of Object.entries(order.items || {})) {
+        items.append(element('li', '', name + ' × ' + count));
+    }
+    details.append(
+        element('p', '', 'Хаяг: ' + (order.address || '')),
+        element('p', '', 'Утас: ' + (order.userPhone || '')),
+        items,
+        element('strong', '', 'Нийт дүн: ' + money(order.totalPrice || 0)),
+    );
+    openDetails('Захиалгын мэдээлэл', details);
+}
+
+async function sendOrder(event) {
+    event.preventDefault();
+    if (!authReady || sendingOrder || !cart.size) return;
+    if (!activeUser) {
+        await signIn();
+        return;
+    }
+
+    const userPhone = $('phone').value.trim();
+    const address = $('office').value.trim();
+    if (!userPhone || !address) {
+        setMessage('Утасны дугаар, хүргэлтийн хаягаа бөглөнө үү.', true);
+        return;
+    }
+
+    const user = activeUser;
+    const items = Object.fromEntries(Array.from(cart, ([product, count]) => [product.name, count]));
+    const totalPrice = cartTotals().amount;
+    sendingOrder = true;
+    syncCheckout();
+    setMessage('');
+    try {
+        await db.collection('orders').add({
+            userId: user.uid,
+            userName: user.displayName,
+            userPhone,
+            address,
+            items,
+            totalPrice,
+            status: 'Шинэ',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        });
+        cart.clear();
+        $('checkout').reset();
+        $('banks').querySelectorAll('details').forEach((details) => { details.open = false; });
+        renderCart();
+        setMessage('Таны захиалгыг хүлээн авлаа.');
+    } catch {
+        setMessage('Захиалгыг илгээж чадсангүй. Дахин оролдоно уу.', true);
+    } finally {
+        sendingOrder = false;
+        syncCheckout();
+    }
+}
+
+renderMenu();
+renderBanks();
+renderCart();
+if ('IntersectionObserver' in window) {
+    new IntersectionObserver(([entry]) => {
+        $('mobile-cart').classList.toggle('cart-in-view', entry.isIntersecting);
+    }, { rootMargin: '0px 0px -72px 0px' }).observe($('cart'));
+}
+$('checkout').addEventListener('submit', sendOrder);
+$('sign-in').addEventListener('click', signIn);
+$('sign-out').addEventListener('click', async () => {
+    try {
+        await auth.signOut();
+    } catch {
+        $('auth-message').textContent = 'Системээс гарч чадсангүй. Дахин оролдоно уу.';
+        $('auth-message').dataset.error = true;
     }
 });
 
-// Зураг томруулж харах
-function showProductImage(imgUrl, title) {
-    Swal.fire({ title: title, imageUrl: imgUrl, imageWidth: 400, showCloseButton: true, showConfirmButton: false });
-}
-
-// Сагс руу нэмэх
-function addToCart(name, price, icon) {
-    cart.push({name, price, icon});
-    total += price;
-    updateCartUI();
-}
-
-// Сагснаас хасах
-function removeFromCart(name) {
-    const index = cart.findLastIndex(item => item.name === name);
-    if (index > -1) {
-        total -= cart[index].price;
-        cart.splice(index, 1); 
-        updateCartUI();
-    }
-}
-
-// Сагсны UI шинэчлэх (Загвар засагдсан хувилбар)
-function updateCartUI() {
-    const list = document.getElementById('cart-items');
-    if (!list) return;
-    list.innerHTML = "";
-    const itemCounts = {};
-    const orderedKeys = [];
-
-    cart.forEach(item => {
-        if (!itemCounts[item.name]) { 
-            itemCounts[item.name] = { price: item.price, count: 0, icon: item.icon }; 
-            orderedKeys.push(item.name);
+try {
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    auth = firebase.auth();
+    db = firebase.firestore();
+    auth.onAuthStateChanged((user) => {
+        if (stopHistory) stopHistory();
+        if (activeUser && activeUser.uid !== user?.uid) {
+            cart.clear();
+            $('checkout').reset();
+            $('history-list').replaceChildren();
+            $('detail-dialog').close();
+            setMessage('');
+            renderCart();
         }
-        itemCounts[item.name].count++;
-    });
-
-    orderedKeys.forEach(name => {
-        let { price, count, icon } = itemCounts[name];
-        let li = document.createElement('li');
-        li.className = "cart-item-container";
-        li.style = "display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid #f0f0f0;";
-        li.innerHTML = `
-            <div style="display:flex; align-items:center; gap:12px; flex:1;">
-                <img src="${productImages[name]}" style="width:45px; height:45px; border-radius:10px; object-fit:cover;">
-                <div style="flex:1;">
-                    <div style="font-weight:600; font-size:14px;">${name}</div>
-                    <div style="color:#2ecc71; font-weight:bold; font-size:13px;">${(price * count).toLocaleString()}₮</div>
-                </div>
-            </div>
-            <div style="display:flex; align-items:center; gap:10px; background:#f8f9fa; padding:5px 10px; border-radius:20px;">
-                <button onclick="removeFromCart('${name}')" style="width:26px; height:26px; border-radius:50%; border:none; background:#ff7675; color:white; cursor:pointer; font-weight:bold;">-</button>
-                <span style="font-weight:bold; min-width:15px; text-align:center;">${count}</span>
-                <button onclick="addToCart('${name}', ${price}, '${icon}')" style="width:26px; height:26px; border-radius:50%; border:none; background:#2ecc71; color:white; cursor:pointer; font-weight:bold;">+</button>
-            </div>`;
-        list.appendChild(li);
-    });
-    document.getElementById('total-price').textContent = total.toLocaleString();
-}
-
-// Захиалгын түүхийг Real-time хянах
-function observeOrderHistory(userId) {
-    const historyList = document.getElementById('history-list');
-    db.collection("orders")
-        .where("userId", "==", userId)
-        .orderBy("createdAt", "desc")
-        .limit(10)
-        .onSnapshot((snapshot) => {
-            if (snapshot.empty) { 
-                historyList.innerHTML = "<p style='color:#888; font-size:13px; text-align:center;'>Түүх хоосон байна.</p>"; 
-                return; 
-            }
-            let html = "";
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                const statusColor = getStatusColor(data.status);
-                html += `
-                    <div onclick="showOrderDetails('${doc.id}')" style="cursor:pointer; background:#fff; padding:12px; border-radius:12px; margin-bottom:8px; border-left: 6px solid ${statusColor}; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display:flex; justify-content:space-between; align-items:center;">
-                        <div>
-                            <strong style="font-size:13px;">📅 ${data.createdAt?.toDate().toLocaleDateString() || 'Саяхан'}</strong><br>
-                            <small style="color:#666;">${data.totalPrice.toLocaleString()}₮ (Дэлгэрэнгүй)</small>
-                        </div>
-                        <span style="background:${statusColor}; color:white; padding:4px 10px; border-radius:15px; font-size:10px; font-weight:bold;">${data.status}</span>
-                    </div>`;
-            });
-            historyList.innerHTML = html;
-        }, (err) => console.log("History error:", err));
-}
-
-// Захиалгын дэлгэрэнгүй харах
-async function showOrderDetails(orderId) {
-    const doc = await db.collection("orders").doc(orderId).get();
-    if (!doc.exists) return;
-    const data = doc.data();
-    let itemsHtml = "<ul style='text-align:left; list-style:none; padding:0;'>";
-    for (const [name, count] of Object.entries(data.items)) {
-        itemsHtml += `<li style='padding:8px 0; border-bottom:1px solid #eee; display:flex; justify-content:space-between;'><span>${name}</span> <strong>x${count}</strong></li>`;
-    }
-    itemsHtml += "</ul>";
-
-    Swal.fire({
-        title: 'Захиалгын мэдээлэл',
-        html: `<div style="text-align:left; font-size:14px; color:#555;">
-                <p>📍 Хаяг: <strong>${data.address}</strong></p>
-                <p>📞 Утас: <strong>${data.userPhone}</strong></p>
-                ${itemsHtml}
-                <p style="margin-top:15px; font-weight:bold; border-top:2px solid #eee; padding-top:10px; font-size:18px; color:#2c3e50; text-align:right;">Нийт: ${data.totalPrice.toLocaleString()}₮</p>
-               </div>`,
-        confirmButtonColor: '#2ecc71'
-    });
-}
-
-// Захиалга илгээх
-async function sendOrder() {
-    const user = auth.currentUser;
-    const office = document.getElementById('office').value;
-    const phone = document.getElementById('phone').value;
-
-    if (!user || cart.length === 0 || !office || !phone) { 
-        return Swal.fire("Дутуу", "Мэдээллээ бүрэн оруулна уу", "warning"); 
-    }
-
-    const itemCounts = {};
-    cart.forEach(item => { itemCounts[item.name] = (itemCounts[item.name] || 0) + 1; });
-    
-    try {
-        await db.collection("orders").add({
-            userId: user.uid,
-            userName: user.displayName,
-            userPhone: phone,
-            address: office,
-            items: itemCounts,
-            totalPrice: total,
-            status: "Шинэ",
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        cart = []; total = 0; updateCartUI();
-        Swal.fire("Амжилттай", "Таны захиалгыг хүлээн авлаа.", "success");
-    } catch (e) { Swal.fire("Алдаа", e.message, "error"); }
-}
-
-// Текст хуулах
-function copyText(text, msg) {
-    navigator.clipboard.writeText(text).then(() => {
-        Swal.fire({ title: msg, icon: 'success', timer: 1000, showConfirmButton: false, toast: true, position: 'top' });
-    });
+        activeUser = user;
+        authReady = true;
+        $('sign-in').hidden = Boolean(user);
+        $('sign-out').hidden = !user;
+        $('user-name').textContent = user?.displayName || '';
+        $('user-name').hidden = !user?.displayName;
+        $('history-link').hidden = !user;
+        $('order-history').hidden = !user;
+        stopHistory = user ? observeHistory(user.uid) : null;
+        syncCheckout();
+    }, () => setMessage('Нэвтрэх үйлчилгээтэй холбогдож чадсангүй.', true));
+} catch {
+    setMessage('Нэвтрэх үйлчилгээтэй холбогдож чадсангүй. Хуудсаа дахин ачаална уу.', true);
 }
