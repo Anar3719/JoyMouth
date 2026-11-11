@@ -97,6 +97,7 @@ async function notifyPush(orderId, config, message) {
 
 exports.notifyNewOrder = onDocumentCreated({
     document: 'orders/{orderId}',
+    region: 'asia-northeast1',
     secrets: [settings],
     retry: true,
     timeoutSeconds: 60,
