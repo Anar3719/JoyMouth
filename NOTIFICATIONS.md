@@ -35,7 +35,7 @@
 }
 ```
 
-JSON-ийг репогоос гадна түр файлд хадгалаад Firebase CLI-ээр тохируулна. CLI-д нэвтэрч төслийг сонгоно. Cloud Functions-ийн одоогийн бүс `us-central1`. Firestore-ийн байршил, Firebase CLI-ийн deployment шалгалтаар шаардлагатай бол trigger-ийн бүсийг тааруулна.
+JSON-ийг репогоос гадна түр файлд хадгалаад Firebase CLI-ээр тохируулна. CLI-д нэвтэрч төслийг сонгоно. `notifyNewOrder` нь Firestore-той ижил `asia-northeast1` бүсэд байрлана. Админ хуудаснаас дууддаг `configureAdminPush` нь `us-central1` бүсэд байрлана.
 
 ```bash
 firebase functions:secrets:set ORDER_NOTIFICATIONS --project joymouth-e0898 --data-file /path/outside/repo/order-notifications.json
