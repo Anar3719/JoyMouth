@@ -24,6 +24,9 @@ const banks = [
 const $ = (id) => document.getElementById(id);
 const money = (amount) => new Intl.NumberFormat('en-US').format(amount) + '₮';
 const cart = new Map();
+const cartStorageKey = 'joymouth-cart';
+const checkout = $('checkout');
+const orderHistory = $('order-history');
 let auth;
 let db;
 let activeUser = null;
@@ -107,11 +110,36 @@ function renderBanks() {
     }
 }
 
+function restoreCart() {
+    cart.clear();
+    try {
+        const savedCart = JSON.parse(sessionStorage.getItem(cartStorageKey)) || {};
+        for (const product of products) {
+            const count = savedCart[product.name];
+            if (Number.isSafeInteger(count) && count > 0) cart.set(product, count);
+        }
+    } catch {
+        // The cart still works when browser storage is unavailable.
+    }
+}
+
+function saveCart() {
+    try {
+        if (cart.size) {
+            const quantities = Object.fromEntries(Array.from(cart, ([product, count]) => [product.name, count]));
+            sessionStorage.setItem(cartStorageKey, JSON.stringify(quantities));
+        } else sessionStorage.removeItem(cartStorageKey);
+    } catch {
+        // The in-memory cart still works.
+    }
+}
+
 function changeQuantity(product, change, restoreFocus = false) {
     if (sendingOrder) return;
     const count = (cart.get(product) || 0) + change;
     if (count > 0) cart.set(product, count);
     else cart.delete(product);
+    saveCart();
     setMessage('');
     renderCart();
     $('cart-announcement').textContent = product.name + ' · Сагсанд ' + Math.max(0, count) + ' ширхэг';
@@ -158,7 +186,7 @@ function renderCart() {
     $('mobile-total').textContent = money(amount);
     $('mobile-cart').hidden = !quantity;
     $('cart-empty').hidden = Boolean(quantity);
-    $('checkout').hidden = !quantity;
+    checkout.hidden = !quantity;
     syncCheckout();
 }
 
@@ -179,34 +207,41 @@ function setMessage(text, error = false) {
 }
 
 function syncCheckout() {
-    $('checkout').noValidate = !activeUser;
+    checkout.noValidate = !activeUser;
     $('checkout-fields').disabled = sendingOrder;
     $('place-order').disabled = !authReady || signingIn || sendingOrder;
     $('place-order').textContent = sendingOrder ? 'Илгээж байна…' : activeUser ? 'Захиалга өгөх' : 'Google-ээр нэвтэрч үргэлжлүүлэх';
-    $('sign-in').disabled = !authReady || signingIn;
-    $('sign-out').disabled = sendingOrder;
     $('cart-items').querySelectorAll('button').forEach((control) => { control.disabled = sendingOrder; });
     $('products').querySelectorAll('.product-info button').forEach((control) => { control.disabled = sendingOrder; });
 }
 
-async function signIn() {
+function syncAuthControls() {
+    $('sign-in').disabled = !authReady || signingIn;
+    $('sign-out').disabled = sendingOrder;
+    if (checkout) syncCheckout();
+}
+
+function setAuthMessage(message, error = false) {
+    $('auth-message').textContent = message;
+    $('auth-message').dataset.error = error;
+}
+
+async function signIn(fromCheckout = false) {
     if (!authReady || signingIn) return;
     signingIn = true;
-    setMessage('');
-    $('auth-message').textContent = '';
-    syncCheckout();
+    if (checkout) setMessage('');
+    setAuthMessage('');
+    syncAuthControls();
     try {
         await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
-        if (cart.size) setMessage('Хүргэлтийн мэдээллээ бөглөөд захиалгаа илгээнэ үү.');
+        if (checkout && cart.size) setMessage('Хүргэлтийн мэдээллээ бөглөөд захиалгаа илгээнэ үү.');
     } catch {
         const message = 'Google-ээр нэвтэрч чадсангүй. Дахин оролдоно уу.';
-        if (document.activeElement === $('sign-in') || !cart.size) {
-            $('auth-message').textContent = message;
-            $('auth-message').dataset.error = true;
-        } else setMessage(message, true);
+        if (fromCheckout) setMessage(message, true);
+        else setAuthMessage(message, true);
     } finally {
         signingIn = false;
-        syncCheckout();
+        syncAuthControls();
     }
 }
 
@@ -296,7 +331,7 @@ async function sendOrder(event) {
     event.preventDefault();
     if (!authReady || sendingOrder || !cart.size) return;
     if (!activeUser) {
-        await signIn();
+        await signIn(true);
         return;
     }
 
@@ -311,7 +346,7 @@ async function sendOrder(event) {
     const items = Object.fromEntries(Array.from(cart, ([product, count]) => [product.name, count]));
     const totalPrice = cartTotals().amount;
     sendingOrder = true;
-    syncCheckout();
+    syncAuthControls();
     setMessage('');
     try {
         await db.collection('orders').add({
@@ -325,7 +360,8 @@ async function sendOrder(event) {
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         });
         cart.clear();
-        $('checkout').reset();
+        saveCart();
+        checkout.reset();
         $('banks').querySelectorAll('details').forEach((details) => { details.open = false; });
         renderCart();
         setMessage('Таны захиалгыг хүлээн авлаа.');
@@ -333,26 +369,39 @@ async function sendOrder(event) {
         setMessage('Захиалгыг илгээж чадсангүй. Дахин оролдоно уу.', true);
     } finally {
         sendingOrder = false;
-        syncCheckout();
+        syncAuthControls();
     }
 }
 
-renderMenu();
-renderBanks();
-renderCart();
-if ('IntersectionObserver' in window) {
-    new IntersectionObserver(([entry]) => {
-        $('mobile-cart').classList.toggle('cart-in-view', entry.isIntersecting);
-    }, { rootMargin: '0px 0px -72px 0px' }).observe($('cart'));
+if (checkout) {
+    restoreCart();
+    renderMenu();
+    renderBanks();
+    renderCart();
+    if ('IntersectionObserver' in window) {
+        new IntersectionObserver(([entry]) => {
+            $('mobile-cart').classList.toggle('cart-in-view', entry.isIntersecting);
+        }, { rootMargin: '0px 0px -72px 0px' }).observe($('cart'));
+    }
+    checkout.addEventListener('submit', sendOrder);
+    $('history-link').addEventListener('click', (event) => {
+        if (sendingOrder) event.preventDefault();
+    });
+    window.addEventListener('pageshow', (event) => {
+        if (event.persisted) {
+            restoreCart();
+            renderCart();
+        }
+    });
 }
-$('checkout').addEventListener('submit', sendOrder);
-$('sign-in').addEventListener('click', signIn);
+
+$('sign-in').addEventListener('click', () => signIn());
 $('sign-out').addEventListener('click', async () => {
+    setAuthMessage('');
     try {
         await auth.signOut();
     } catch {
-        $('auth-message').textContent = 'Системээс гарч чадсангүй. Дахин оролдоно уу.';
-        $('auth-message').dataset.error = true;
+        setAuthMessage('Системээс гарч чадсангүй. Дахин оролдоно уу.', true);
     }
 });
 
@@ -361,14 +410,15 @@ try {
     auth = firebase.auth();
     db = firebase.firestore();
     auth.onAuthStateChanged((user) => {
-        if (stopHistory) stopHistory();
         if (activeUser && activeUser.uid !== user?.uid) {
             cart.clear();
-            $('checkout').reset();
-            historyMessage('');
+            saveCart();
             $('detail-dialog').close();
-            setMessage('');
-            renderCart();
+            if (checkout) {
+                checkout.reset();
+                setMessage('');
+                renderCart();
+            }
         }
         activeUser = user;
         authReady = true;
@@ -376,11 +426,18 @@ try {
         $('sign-out').hidden = !user;
         $('user-name').textContent = user?.displayName || '';
         $('user-name').hidden = !user?.displayName;
-        $('history-link').hidden = !user;
-        $('order-history').hidden = !user;
-        stopHistory = user ? observeHistory(user.uid) : null;
-        syncCheckout();
-    }, () => setMessage('Нэвтрэх үйлчилгээтэй холбогдож чадсангүй.', true));
+        if (orderHistory) {
+            if (stopHistory) stopHistory();
+            stopHistory = user ? observeHistory(user.uid) : null;
+            if (!user) historyMessage('Захиалгын түүхээ харахын тулд Google-ээр нэвтэрнэ үү.');
+        }
+        syncAuthControls();
+    }, () => showAuthError('Нэвтрэх үйлчилгээтэй холбогдож чадсангүй.'));
 } catch {
-    setMessage('Нэвтрэх үйлчилгээтэй холбогдож чадсангүй. Хуудсаа дахин ачаална уу.', true);
+    showAuthError('Нэвтрэх үйлчилгээтэй холбогдож чадсангүй. Хуудсаа дахин ачаална уу.');
+}
+
+function showAuthError(message) {
+    setAuthMessage(message, true);
+    if (orderHistory) $('history-message').hidden = true;
 }
