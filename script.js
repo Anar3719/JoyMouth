@@ -210,27 +210,70 @@ async function signIn() {
     }
 }
 
+const orderDate = new Intl.DateTimeFormat('sv-SE', {
+    year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'Asia/Ulaanbaatar',
+});
+const statusStyles = new Map([
+    ['Шинэ', 'new'],
+    ['Төлбөр хүлээгдэж байна', 'pending'],
+    ['Бэлтгэгдэж байна', 'preparing'],
+    ['Хүргэлтэнд гарсан', 'shipping'],
+    ['Хүргэгдсэн', 'delivered'],
+    ['Цуцлагдсан', 'cancelled'],
+]);
+
+function historyMessage(message) {
+    $('history-list').replaceChildren();
+    $('history-table').hidden = true;
+    $('history-message').textContent = message;
+    $('history-message').hidden = false;
+}
+
+function historyRow(order) {
+    const timestamp = order.createdAt?.toDate();
+    const dateText = timestamp ? orderDate.format(timestamp) : 'Саяхан';
+    const status = order.status || 'Шинэ';
+    const total = money(order.totalPrice || 0);
+
+    const row = element('tr', 'history-row');
+    const dateCell = element('td', 'history-date');
+    if (timestamp) {
+        const time = element('time', '', dateText);
+        time.dateTime = dateText;
+        dateCell.append(time);
+    } else dateCell.textContent = dateText;
+
+    const badge = element('span', 'order-status', status);
+    badge.dataset.status = statusStyles.get(status) || 'other';
+    const statusCell = element('td', 'history-status');
+    statusCell.append(badge);
+
+    const action = element('td', 'history-action');
+    const detail = button('›', 'history-detail', () => showOrder(order));
+    detail.setAttribute('aria-label', dateText + ', ' + total + ', ' + status + ' — дэлгэрэнгүй');
+    detail.title = 'Дэлгэрэнгүй';
+    action.append(detail);
+    row.append(dateCell, element('td', 'history-amount', total), statusCell, action);
+    row.addEventListener('click', (event) => {
+        if (!detail.contains(event.target)) detail.click();
+    });
+    return row;
+}
+
 function observeHistory(userId) {
-    const history = $('history-list');
-    history.replaceChildren(element('p', 'empty', 'Ачаалж байна…'));
+    historyMessage('Ачаалж байна…');
     return db.collection('orders').where('userId', '==', userId).orderBy('createdAt', 'desc').limit(10)
         .onSnapshot((snapshot) => {
             if (activeUser?.uid !== userId) return;
             if (snapshot.empty) {
-                history.replaceChildren(element('p', 'empty', 'Одоогоор захиалга байхгүй.'));
+                historyMessage('Одоогоор захиалга байхгүй.');
                 return;
             }
-            const rows = snapshot.docs.map((document) => {
-                const order = document.data();
-                const date = order.createdAt?.toDate().toLocaleDateString('mn-MN') || 'Саяхан';
-                const row = button('', 'button button-outline history-row', () => showOrder(order));
-                row.append(element('strong', '', date), element('span', '', money(order.totalPrice || 0)),
-                    element('span', 'order-status', order.status || 'Шинэ'));
-                return row;
-            });
-            history.replaceChildren(...rows);
+            $('history-list').replaceChildren(...snapshot.docs.map((document) => historyRow(document.data())));
+            $('history-message').hidden = true;
+            $('history-table').hidden = false;
         }, () => {
-            if (activeUser?.uid === userId) history.replaceChildren(element('p', 'empty', 'Захиалгын түүхийг ачаалж чадсангүй.'));
+            if (activeUser?.uid === userId) historyMessage('Захиалгын түүхийг ачаалж чадсангүй.');
         });
 }
 
@@ -322,7 +365,7 @@ try {
         if (activeUser && activeUser.uid !== user?.uid) {
             cart.clear();
             $('checkout').reset();
-            $('history-list').replaceChildren();
+            historyMessage('');
             $('detail-dialog').close();
             setMessage('');
             renderCart();
