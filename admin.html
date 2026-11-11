@@ -19,13 +19,20 @@
         select { width: 100%; padding: 12px; border-radius: 12px; border: 1.5px solid #e2e8f0; font-family: inherit; font-weight: 600; cursor: pointer; }
         #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; }
         button.login-btn { padding: 15px 30px; font-size: 16px; font-weight: 800; background: #4285F4; color: white; border: none; border-radius: 12px; cursor: pointer; }
+        .notification-bar { background: white; border: 1px solid #dce6df; border-radius: 16px; padding: 14px 18px; margin-bottom: 20px; }
+        .notification-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+        .notification-actions button { background: #edf6ef; color: #174d30; border: 1px solid #c6e2cf; border-radius: 8px; padding: 9px 12px; min-height: 44px; cursor: pointer; font: inherit; font-weight: 600; }
+        .notification-status:not(:empty) { margin: 10px 0 0; }
+        #new-order-signal:not(:empty) { margin: 0 0 12px; padding: 10px 12px; border-radius: 8px; background: #e5f8eb; color: #174d30; font-weight: 800; }
+        .order-card:target { outline: 2px solid #21754a; outline-offset: -2px; }
     </style>
 </head>
 <body>
 
-<div id="login-overlay" style="display: none;">
+<div id="login-overlay">
     <h2>Joy Mouth Admin</h2>
     <p>Админ эрхээр нэвтэрнэ үү</p>
+    <p id="admin-login-notice" role="status"></p>
     <button class="login-btn" onclick="adminLogin()">Google-ээр нэвтрэх</button>
 </div>
 
@@ -35,37 +42,55 @@
     <h1 style="margin: 0; font-weight: 800;">👨‍🍳 Joy Mouth Admin</h1>
     <div id="stats" style="font-weight: 800; color: var(--primary); background: #f0fdf4; padding: 10px 20px; border-radius: 15px;">
         Нийт: <span id="count">0</span>
-        <button onclick="firebase.auth().signOut()" style="margin-left: 10px; border: none; background: none; cursor: pointer; font-size: 12px; color: #666;">Гарах</button>
+        <button id="admin-sign-out" type="button" style="margin-left: 10px; border: none; background: none; cursor: pointer; font-size: 12px; color: #666;">Гарах</button>
     </div>
 </div>
 
+<section class="notification-bar" aria-label="Захиалгын мэдэгдэл">
+    <p id="new-order-signal" role="status"></p>
+    <div class="notification-actions">
+        <button type="button" id="sound-toggle" aria-pressed="false">Дуу асаах</button>
+        <button type="button" id="push-toggle" aria-pressed="false">Утас, компьютерийн мэдэгдэл асаах</button>
+    </div>
+    <p id="notification-status" class="notification-status" role="status"></p>
+</section>
 <div class="grid" id="admin-orders"></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
+<script src="admin-firebase-config.js"></script>
+<script src="admin-notifications.js"></script>
 <script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyDpVh6TB0eVPHhoXjDHfxJuMjnkYnvlwRM",
-        authDomain: "joymouth-e0898.firebaseapp.com",
-        projectId: "joymouth-e0898",
-        storageBucket: "joymouth-e0898.firebasestorage.app",
-        messagingSenderId: "716037708846",
-        appId: "1:716037708846:web:22691690cb8f214cfb13bf"
-    };
-    firebase.initializeApp(firebaseConfig);
+    firebase.initializeApp(adminFirebaseConfig);
     const db = firebase.firestore();
     const auth = firebase.auth();
-    let firstLoad = true;
+    const notifications = createAdminNotifications();
+    let stopOrders;
+    const statusColors = new Map([
+        ['Шинэ', '#ad6000'], ['Бэлтгэгдэж байна', '#7951a3'],
+        ['Хүргэлтэнд гарсан', '#aa4f18'], ['Хүргэгдсэн', '#218044'],
+        ['Цуцлагдсан', '#b64135'], ['Төлбөр хүлээгдэж байна', '#286794'],
+    ]);
+    document.getElementById('admin-sign-out').addEventListener('click', notifications.signOut);
 
     // Нэвтрэлтийн төлөв хянах
     auth.onAuthStateChanged(user => {
+        stopOrders?.();
+        stopOrders = undefined;
         if (user && user.email === "g.anar1202@gmail.com") {
+            document.getElementById('admin-login-notice').textContent = '';
             document.getElementById('login-overlay').style.display = 'none';
-            startListening();
+            stopOrders = startListening();
+            notifications.refresh();
         } else {
             document.getElementById('login-overlay').style.display = 'flex';
+            document.getElementById('admin-orders').replaceChildren();
+            document.getElementById('count').textContent = '0';
+            notifications.clear();
             if (user) {
                 Swal.fire("Админ биш", `${user.email} хаяг админ эрхгүй байна.`, "error");
                 auth.signOut();
@@ -79,60 +104,82 @@
     }
 
     function startListening() {
-        db.collection("orders").orderBy("createdAt", "desc").onSnapshot(snapshot => {
-            const list = document.getElementById('admin-orders');
-            document.getElementById('count').innerText = snapshot.size;
-            
-            if (!firstLoad && snapshot.docChanges().some(c => c.type === "added")) {
-                document.getElementById('orderSound').play();
+        let knownServerOrderIds;
+        let highlightedOrder;
+        const list = document.getElementById('admin-orders');
+        return db.collection('orders').orderBy('createdAt', 'desc').onSnapshot({
+            includeMetadataChanges: true,
+        }, (snapshot) => {
+            document.getElementById('count').textContent = snapshot.size;
+            if (!snapshot.metadata.fromCache) {
+                if (knownServerOrderIds) {
+                    const added = snapshot.docs.filter((doc) => !knownServerOrderIds.has(doc.id));
+                    if (added.length) notifications.signal(added.length);
+                }
+                knownServerOrderIds = new Set(snapshot.docs.map((doc) => doc.id));
             }
-            firstLoad = false;
-
-            list.innerHTML = "";
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                const card = document.createElement('div');
-                card.className = `order-card ${data.status === 'Шинэ' ? 'new-order' : ''}`;
-                
-                let itemsHtml = Object.entries(data.items).map(([n, q]) => 
-                    `<div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:5px;"><span>${n}</span> <b>x${q}</b></div>`
-                ).join('');
-                
-                card.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:start;">
-                        <div>
-                            <div style="font-weight:800; font-size:16px;">${data.userName}</div>
-                            <div style="font-size:12px; color:#64748b;">🕒 ${data.createdAt?.toDate().toLocaleTimeString()}</div>
-                        </div>
-                        <span class="status-badge" style="background:${getStatusColor(data.status)}; color:white;">${data.status}</span>
-                    </div>
-                    <div style="margin: 15px 0; font-size:13px;">📍 ${data.address} <br> 📞 ${data.userPhone}</div>
-                    <div class="items-list">${itemsHtml}</div>
-                    <div class="total">${(data.totalPrice || 0).toLocaleString()}₮</div>
-                    <div style="margin-top:15px;">
-                        <select onchange="updateStatus('${doc.id}', this.value)">
-                            <option value="Шинэ" ${data.status === 'Шинэ' ? 'selected' : ''}>Шинэ</option>
-                            <option value="Төлбөр хүлээгдэж байна" ${data.status === 'Төлбөр хүлээгдэж байна' ? 'selected' : ''}>Төлбөр хүлээгдэж байна</option>
-                            <option value="Бэлтгэгдэж байна" ${data.status === 'Бэлтгэгдэж байна' ? 'selected' : ''}>Бэлтгэгдэж байна</option>
-                            <option value="Хүргэлтэнд гарсан" ${data.status === 'Хүргэлтэнд гарсан' ? 'selected' : ''}>Хүргэлтэнд гарсан</option>
-                            <option value="Хүргэгдсэн" ${data.status === 'Хүргэгдсэн' ? 'selected' : ''}>Хүргэгдсэн</option>
-                            <option value="Цуцлагдсан" ${data.status === 'Цуцлагдсан' ? 'selected' : ''}>Цуцлагдсан</option>
-                        </select>
-                    </div>
-                `;
-                list.appendChild(card);
-            });
+            if (list.childElementCount !== snapshot.size || snapshot.docChanges().length) {
+                list.replaceChildren(...snapshot.docs.map(renderOrder));
+            }
+            const orderId = location.hash.slice(1);
+            const target = orderId && document.getElementById(orderId);
+            if (target && highlightedOrder !== orderId) {
+                target.scrollIntoView({ block: 'center' });
+                highlightedOrder = orderId;
+            }
         }, (error) => {
-            console.error("Firestore Error:", error);
+            console.error('Firestore order listener:', error.code);
             if (error.code === 'permission-denied') {
-                Swal.fire("Эрхгүй эсвэл Индекс үүсээгүй", "Console (F12) дэх линк дээр дарж Индекс үүсгэнэ үү.", "warning");
+                Swal.fire('Захиалгыг унших эрхгүй байна', 'Админ эрхээ шалгана уу.', 'warning');
             }
         });
     }
 
-    function getStatusColor(s) {
-        const colors = { "Шинэ": "#f39c12", "Бэлтгэгдэж байна": "#9b59b6", "Хүргэлтэнд гарсан": "#e67e22", "Хүргэгдсэн": "#2ecc71", "Цуцлагдсан": "#e74c3c", "Төлбөр хүлээгдэж байна": "#3498db" };
-        return colors[s] || "#95a5a6";
+    function node(tag, text, className) {
+        const item = document.createElement(tag);
+        item.textContent = text ?? '';
+        if (className) item.className = className;
+        return item;
+    }
+
+    function renderOrder(doc) {
+        const data = doc.data();
+        const card = node('article', '', data.status === 'Шинэ' ? 'order-card new-order' : 'order-card');
+        card.id = 'order-' + encodeURIComponent(doc.id);
+        const heading = node('div');
+        heading.style.cssText = 'display:flex; justify-content:space-between; align-items:start; gap:12px';
+        const user = node('div');
+        const name = node('strong', data.userName);
+        const time = node('div', data.createdAt?.toDate().toLocaleTimeString() || 'Саяхан');
+        time.style.cssText = 'font-size:12px; color:#64748b';
+        user.append(name, time);
+        const status = node('span', data.status, 'status-badge');
+        status.style.background = statusColors.get(data.status) || '#5f6b65';
+        status.style.color = 'white';
+        heading.append(user, status);
+
+        const contact = node('div');
+        contact.style.cssText = 'margin:15px 0; font-size:13px';
+        contact.append(node('div', '📍 ' + (data.address || '')), node('div', '📞 ' + (data.userPhone || '')));
+        const items = node('div', '', 'items-list');
+        for (const [name, quantity] of Object.entries(data.items || {})) {
+            const item = node('div');
+            item.style.cssText = 'display:flex; justify-content:space-between; font-size:14px; margin-bottom:5px';
+            item.append(node('span', name), node('b', 'x' + quantity));
+            items.append(item);
+        }
+        const total = node('div', (data.totalPrice || 0).toLocaleString() + '₮', 'total');
+        const select = node('select');
+        select.setAttribute('aria-label', 'Захиалгын төлөв');
+        for (const label of statusColors.keys()) {
+            const option = node('option', label);
+            option.value = label;
+            option.selected = label === data.status;
+            select.append(option);
+        }
+        select.addEventListener('change', () => updateStatus(doc.id, select.value));
+        card.append(heading, contact, items, total, select);
+        return card;
     }
 
     function updateStatus(id, s) {
