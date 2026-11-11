@@ -26,7 +26,7 @@
             </a>
             <nav aria-label="Үндсэн цэс">
                 <a class="menu-link" href="#menu">Цэс</a>
-                <a id="history-link" href="#order-history" hidden>Захиалгууд</a>
+                <a id="history-link" href="orders.html">Захиалгууд</a>
                 <button class="button button-outline" id="sign-in" type="button" disabled>Нэвтрэх</button>
                 <span id="user-name" class="user-name" hidden></span>
                 <button class="button button-outline" id="sign-out" type="button" hidden>Гарах</button>
@@ -80,30 +80,6 @@
                 <p id="cart-message" class="message" role="status"></p>
             </aside>
         </div>
-
-        <section id="order-history" aria-labelledby="history-title" hidden>
-            <h2 id="history-title">Сүүлийн захиалгууд</h2>
-            <p id="history-message" class="empty" role="status"></p>
-            <div id="history-table" class="history-panel" hidden>
-                <table aria-labelledby="history-title">
-                    <colgroup>
-                        <col class="history-date-col">
-                        <col class="history-amount-col">
-                        <col class="history-status-col">
-                        <col class="history-action-col">
-                    </colgroup>
-                    <thead>
-                        <tr>
-                            <th scope="col">Огноо</th>
-                            <th scope="col" class="history-amount">Нийт дүн</th>
-                            <th scope="col">Төлөв</th>
-                            <th scope="col"><span class="sr-only">Дэлгэрэнгүй</span></th>
-                        </tr>
-                    </thead>
-                    <tbody id="history-list"></tbody>
-                </table>
-            </div>
-        </section>
     </main>
 
     <footer class="site-footer"><div class="wrap">Joy Mouth · Өглөөний цайны захиалга</div></footer>
